@@ -24,15 +24,40 @@ De lokale server zoekt zelf een vrije poort tussen 8840 en 8870. Node.js en Pyth
 
 ## Watchface installeren
 
-1. Gebruik een MoYoung/Da Fit-watchfacebestand met extensie `.bin` en bestandstype `0x04`, `0x81` of `0x84`.
-2. Zorg voor minimaal 50% batterij en haal het horloge van de lader.
-3. Verbind het horloge, kies het bestand en controleer de getoonde bestandsinformatie.
-4. Klik **Watchface uploaden** en laat pagina en terminal open tot 100% en de ontvangstbevestiging zichtbaar zijn.
+De pagina bevat nu een officiële, compatibele Type-B-testwatchface uit de Da Fit-catalogus voor firmwarefamilie `NBA` en template 34. Klik eerst op **Type-B-voorbeeld laden** en upload die. Het horloge voegt de custom watchface toe als zesde item en de tool activeert daarna index 6. Daarmee kun je testen zonder Da Fit te installeren.
 
-De upload gebruikt characteristic `FEE6` en activeert custom slot 6. Een bestaande custom watchface in slot 6 wordt vervangen; ingebouwde watchfaces en de firmware worden niet overschreven. Als het horloge de overdracht niet bevestigt, activeert de tool het nieuwe bestand niet.
+Daarnaast staat in de pagina een eenvoudige watchface-maker voor het 240×280-scherm:
+
+1. Kies een titel, kleuren en eventueel een eigen JPG-, PNG- of WebP-achtergrond.
+2. Kies welke velden je wilt tonen: datum, stappen, hartslag en batterij.
+3. Kies een gewone digitale klok of een horizontale binaire BCD-klok. De vier rijen zijn `H1`, `H2`, `M1` en `M2`; de kolommen hebben van links naar rechts de waarden 16, 8, 4, 2 en 1. Een gevulde stip betekent dat de bit actief is. Omdat elk BCD-veld één decimaal cijfer van 0–9 bevat, blijft de kolom 16 uit.
+4. Verplaats tijd, datum, stappen, hartslag of batterij door het onderdeel in het horlogevoorbeeld te slepen. Voor precieze plaatsing kun je de X- en Y-positie invoeren.
+5. Schakel eventueel **transparante onderdelen** in. De gekleurde panelen verdwijnen en de maker bakt de onderliggende achtergrondpixels in de dynamische cijferafbeeldingen.
+6. Klik **Watchface maken**. De browser bouwt lokaal een compleet `.bin`-bestand en selecteert dit voor upload.
+7. Download het bestand eventueel als reservekopie.
+8. Zorg voor minimaal 50% batterij, haal het horloge van de lader en verbind het horloge.
+9. Klik **Watchface uploaden** en laat pagina en terminal open tot 100% en de ontvangstbevestiging zichtbaar zijn.
+
+Je kunt daarnaast nog steeds een bestaande MoYoung/Da Fit-watchface met bestandstype `0x04`, `0x81` of `0x84` kiezen.
+
+De upload gebruikt characteristic `FEE6`. Ingebouwde watchfaces en de firmware worden niet overschreven. Als het horloge de overdracht niet bevestigt, activeert de tool het nieuwe bestand niet.
+
+De MOY-NBA5 gebruikt zichtbare indices vanaf 1. Voor de upload zijn er vijf ingebouwde watchfaces; na een geslaagde Type-B-installatie verschijnt de custom watchface als zesde item. De tool selecteert daarom index 6 met commando `0x19` en controleert de actieve index met `0x29`.
+
+De maker gebruikt MoYoung Type B met fileID `0x81`, een header van 1900 bytes en ruwe RGB565-afbeeldingen. De gemeten `0x84`-respons eindigt op `0x22` (template 34). De beeldgegevens worden lokaal in blokken van 1024 bytes met LZO1X-1 gecomprimeerd en op dezelfde manier uitgelijnd als Da Fits `MiniLzoHelper`. De uitgepakte beeldruimte is 300 KiB. De meegeleverde `template34-3056-color-impression.bin` komt rechtstreeks uit de officiële catalogus-API en blijft beschikbaar als controlegeval.
+
+RGB565 ondersteunt geen echt alfakanaal. De transparantie-optie wordt daarom vooraf samengesteld met de gekozen achtergrond. Bij de binaire klok gebeurt dit voor ieder bit op iedere regel afzonderlijk, zodat een verloop of foto achter alle vier regels blijft aansluiten. Velden met een wisselend aantal cijfers, zoals stappen, kunnen op een zeer gedetailleerde foto kleine herhalende achtergrondvlakjes vertonen; een rustige achtergrond werkt daar het best.
+
+Voor de MOY-NBA5 blokkeert de uploader bestanden groter dan 300 kB. Dit is de grootte van het gecomprimeerde uploadbestand; de vaste uitgepakte Type-B-beeldruimte is eveneens 300 KiB.
+
+De actuele uploader volgt de CRP-overdracht uit de statisch onderzochte Da Fit-SDK. Een antwoord zoals `0x74 00 01` is geen ontvangstbevestiging, maar een verzoek om blok 1. Voor de overdracht vraagt de uploader met commando `0xBA 01` de gewenste bestandsblokgrootte aan het horloge; Da Fit gebruikt dezelfde callback om zijn bestandslezer opnieuw in te stellen. Bij CRP-protocol V2 gaan de opgevraagde bestandsblokken rauw naar FEE6. Alleen de oudere protocolroute voegt een `FE`/CRC/lengte-omhulling toe. Na het laatste blok vergelijkt de uploader ook de CRC van het volledige bestand met de CRC die het horloge terugstuurt. Alleen bij een overeenkomst wordt installatie bevestigd en de toegevoegde index 6 geselecteerd.
+
+Herhaalde verzoeken voor hetzelfde blok worden samengevoegd, maar verschillende blokverzoeken blijven in de ontvangen volgorde staan. Net als Da Fit gebruikt de uploader bij CRP-protocol V2 bevestigde GATT-schrijfacties als FEE6 die ondersteunt. De CRP-frames worden na MTU-onderhandeling in stukken van 244 bytes geschreven; als de Windows Bluetooth-stack die grootte afwijst, schakelt de uploader automatisch terug naar 20 bytes.
+
+Bij de horizontale BCD-klok is de altijd-uitgeschakelde 16-stip statisch in de achtergrond opgenomen. Alleen de dynamische bits 8, 4, 2 en 1 worden per cijfer opgeslagen. Daardoor blijft ook een transparante klok met fotoachtergrond aanzienlijk kleiner.
 
 Bij een actuele hartslag- of bloeddrukmeting wordt de optische sensor tijdelijk gestart en daarna altijd gestopt, ook bij een time-out. Gezondheidsdata blijft lokaal in de geopende pagina en wordt alleen als bestand opgeslagen wanneer je zelf op exporteren klikt.
 
 Hartslag, slaap en vooral de bloeddrukschatting van dit consumentenhorloge zijn geen medische metingen. De bloeddrukwaarde wordt zonder manchet of druksensor door de horlogefirmware geschat.
 
-De gezondheidsfuncties zijn gebaseerd op de open-source [Gadgetbridge Moyoung-protocolbeschrijving](https://gadgetbridge.org/internals/specifics/moyoung-protocol/). De watchface-overdracht is gebaseerd op de interoperabele protocolreeks uit [DaFup](https://github.com/VicGuy/DaFup) en gebruikt hetzelfde custom slot 6.
+De gezondheidsfuncties zijn gebaseerd op de open-source [Gadgetbridge Moyoung-protocolbeschrijving](https://gadgetbridge.org/internals/specifics/moyoung-protocol/). De watchface-overdracht gebruikt de interactieve blok- en CRC-reeks uit de CRP SDK in de Da Fit-APK; de custom watchface verschijnt na installatie als zichtbare index 6. De headeropbouw volgt de openbaar beschreven structuur van [DaWFT](https://github.com/david47k/dawft); de Type-B-blokverpakking is afgeleid uit statische analyse van Da Fits `MiniLzoHelper`. De LZO1X-1-compressor is gebaseerd op de MIT-gelicentieerde clean-roomimplementatie `lzo1x`. De Da Fit-APK is niet geïnstalleerd of uitgevoerd.

@@ -27,7 +27,21 @@
     table { width:100%; border-collapse:collapse; font-size:.92rem; } th,td { text-align:left; border-bottom:1px solid var(--line); padding:9px 6px; } th { color:var(--muted); font-weight:600; }
     pre { min-height:90px; max-height:230px; overflow:auto; background:#050b14; color:#c8d7e8; padding:12px; border-radius:10px; white-space:pre-wrap; }
     .empty { color:var(--muted); padding:14px 0; } .note { font-size:.86rem; color:var(--muted); }
+    .maker { display:grid; grid-template-columns:260px 1fr; gap:22px; align-items:start; margin-top:18px; }
+    .watch-preview { display:block; width:240px; height:280px; border:1px solid #3a4e69; border-radius:26px; background:#050b14; box-shadow:0 12px 30px rgba(0,0,0,.35); }
+    .controls { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    label.control { display:grid; gap:5px; color:var(--muted); font-size:.86rem; }
+    input[type="text"],input[type="file"] { color:var(--ink); max-width:100%; }
+    input[type="text"],input[type="number"],select { width:100%; color:var(--ink); border:1px solid var(--line); border-radius:8px; background:#091426; padding:9px; }
+    input[type="color"] { width:100%; height:42px; border:1px solid var(--line); border-radius:8px; background:#091426; padding:3px; }
+    .checks { display:flex; flex-wrap:wrap; gap:12px; margin-top:12px; color:var(--muted); font-size:.9rem; }
+    .subpanel { border-top:1px solid var(--line); margin-top:20px; padding-top:18px; }
+    .sample-face { display:flex; gap:16px; align-items:center; margin:14px 0 4px; padding:12px; border:1px solid var(--line); border-radius:12px; background:#0b1627; }
+    .sample-face img { width:96px; height:112px; object-fit:cover; border-radius:10px; border:1px solid #3a4e69; }
+    .watch-preview { touch-action:none; cursor:grab; }
+    .watch-preview:active { cursor:grabbing; }
     @media(max-width:760px){ .grid{grid-template-columns:1fr}.trio{grid-template-columns:repeat(3,1fr)} }
+    @media(max-width:650px){ .maker{grid-template-columns:1fr}.controls{grid-template-columns:1fr}.watch-preview{margin:auto}.sample-face{align-items:flex-start} }
   </style>
 </head>
 <body>
@@ -51,14 +65,73 @@
 
   <section class="panel">
     <h2>Watchface toevoegen</h2>
-    <p>Kies een compatibel MoYoung/Da Fit-watchfacebestand in <code>.bin</code>-formaat. De upload gebruikt custom slot 6 en vervangt alleen een eerder geïnstalleerde watchface in dat slot.</p>
+    <p>Maak hier zelf een eenvoudige 240×280-watchface. De maker bouwt lokaal een MoYoung Type-B <code>.bin</code>-bestand met MiniLZO, geschikt voor MOY-NBA5/template 34.</p>
+    <div class="maker">
+      <canvas id="facePreview" class="watch-preview" width="240" height="280" aria-label="Voorbeeld van de watchface"></canvas>
+      <div>
+        <div class="controls">
+          <label class="control">Titel
+            <input id="faceTitle" type="text" maxlength="12" value="MAGIC 3">
+          </label>
+          <label class="control">Accentkleur
+            <input id="faceAccent" type="color" value="#55d6be">
+          </label>
+          <label class="control">Achtergrondkleur
+            <input id="faceBackgroundColor" type="color" value="#07111f">
+          </label>
+          <label class="control">Eigen achtergrond (optioneel)
+            <input id="faceBackgroundFile" type="file" accept="image/png,image/jpeg,image/webp">
+          </label>
+          <label class="control">Tijdweergave
+            <select id="clockStyle"><option value="digital">Digitale klok</option><option value="binary">Binaire BCD-klok (horizontaal)</option></select>
+          </label>
+          <label class="control">Onderdeel verplaatsen
+            <select id="movePart"><option value="time">Tijd</option><option value="date">Datum</option><option value="steps">Stappen</option><option value="heart">Hartslag</option><option value="battery">Batterij</option></select>
+          </label>
+          <label class="control">X-positie
+            <input id="partX" type="number" min="0" max="240" step="1">
+          </label>
+          <label class="control">Y-positie
+            <input id="partY" type="number" min="0" max="280" step="1">
+          </label>
+        </div>
+        <div class="checks">
+          <label><input id="transparentParts" type="checkbox"> transparante onderdelen</label>
+          <label><input id="showDate" type="checkbox" checked> datum</label>
+          <label><input id="showSteps" type="checkbox" checked> stappen</label>
+          <label><input id="showHeart" type="checkbox" checked> hartslag</label>
+          <label><input id="showBattery" type="checkbox" checked> batterij</label>
+        </div>
+        <div class="actions">
+          <button id="buildFace">Watchface maken</button>
+          <button id="downloadBuiltFace" class="secondary" disabled>.bin downloaden</button>
+        </div>
+        <p id="builderInfo" class="muted">Het voorbeeld toont testwaarden. De binaire klok heeft rijen voor H1, H2, M1 en M2, met horizontale bits onder 16, 8, 4, 2 en 1.</p>
+      </div>
+    </div>
+    <div class="subpanel">
+      <p>Of kies een bestaand compatibel MoYoung/Da Fit-watchfacebestand:</p>
+      <div class="sample-face">
+        <img src="assets/template34-3056-preview.png" alt="Voorbeeld van de officiële template-34-watchface Color impression" width="120" height="140">
+        <div>
+          <strong>Officiële Type-B-testwatchface</strong>
+          <p class="note">Color impression (Da Fit-catalogus, face-id 3056, template 34). Gebruik deze eerst om de volledige installatieketen op de MOY-NBA5 te controleren.</p>
+          <button id="loadTypeB" class="secondary">Type-B-voorbeeld laden</button>
+        </div>
+      </div>
     <div class="actions">
       <input id="faceFile" type="file" accept=".bin,application/octet-stream">
       <button id="uploadFace" disabled>Watchface uploaden</button>
+      <label class="control" style="width:115px">Actieve index
+        <input id="faceIndex" type="number" min="1" max="6" step="1" value="6">
+      </label>
+      <button id="activateCustomFace" class="secondary" disabled>Index activeren</button>
+    </div>
     </div>
     <p id="faceInfo" class="muted">Nog geen watchfacebestand gekozen.</p>
     <progress id="faceProgress" max="100" value="0" style="width:100%;height:18px"></progress>
-    <p class="note">Zorg voor minimaal 50% batterij, haal het horloge van de lader en houd het dichtbij. Sluit de pagina niet tijdens de overdracht. Zonder ontvangstbevestiging wordt de nieuwe watchface niet geactiveerd.</p>
+    <p id="faceUploadStatus" class="muted">Maak of kies eerst een watchface.</p>
+    <p class="note">De MOY-NBA5 begint met vijf watchfaces. Een geïnstalleerde custom Type-B-watchface wordt als zesde item toegevoegd en staat daarna op index 6. Zowel de meegeleverde officiële testwatchface als de eigen editor gebruiken Type B voor template 34.</p>
   </section>
 
   <section class="panel">
@@ -93,6 +166,6 @@
   </details>
   <p class="note">Gezondheidsgegevens blijven in deze browserpagina tot je exporteert of de pagina sluit. Een watchface-upload schrijft alleen naar het daarvoor bedoelde custom-face-slot en verandert de firmware niet.</p>
 </main>
-<script type="module" src="./health-viewer.js"></script>
+<script type="module" src="./health-viewer.js?v=20260923-15"></script>
 </body>
 </html>

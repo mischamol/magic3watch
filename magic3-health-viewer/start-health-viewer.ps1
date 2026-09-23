@@ -2,7 +2,7 @@ param([switch]$NoBrowser)
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$mime = @{ '.html'='text/html; charset=utf-8'; '.js'='text/javascript; charset=utf-8' }
+$mime = @{ '.html'='text/html; charset=utf-8'; '.js'='text/javascript; charset=utf-8'; '.png'='image/png' }
 $listener = $null
 $port = $null
 
@@ -25,8 +25,10 @@ try {
             $requestLine=$reader.ReadLine(); while(($line=$reader.ReadLine()) -ne $null -and $line -ne ''){}
             $requestPath='/'; if($requestLine -match '^GET\s+([^\s]+)\s+HTTP/'){$requestPath=([Uri]::UnescapeDataString($Matches[1]) -split '\?')[0]}
             $fileName=if($requestPath -eq '/'){'index.html'}else{$requestPath.TrimStart('/')}
-            if($fileName -notmatch '^[a-zA-Z0-9._-]+$'){throw 'Ongeldig pad'}
-            $filePath=Join-Path $root $fileName
+            if($fileName -notmatch '^[a-zA-Z0-9._/-]+$' -or $fileName -match '(^|/)\.\.(/|$)'){throw 'Ongeldig pad'}
+            $filePath=[System.IO.Path]::GetFullPath((Join-Path $root $fileName))
+            $rootPrefix=[System.IO.Path]::GetFullPath($root).TrimEnd([System.IO.Path]::DirectorySeparatorChar)+[System.IO.Path]::DirectorySeparatorChar
+            if(-not $filePath.StartsWith($rootPrefix,[System.StringComparison]::OrdinalIgnoreCase)){throw 'Ongeldig pad'}
             if(-not(Test-Path -LiteralPath $filePath -PathType Leaf)){throw 'Niet gevonden'}
             $body=[System.IO.File]::ReadAllBytes($filePath); $extension=[System.IO.Path]::GetExtension($filePath)
             $contentType=if($mime.ContainsKey($extension)){$mime[$extension]}else{'application/octet-stream'}
