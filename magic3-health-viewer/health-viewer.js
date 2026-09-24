@@ -1,6 +1,6 @@
 import {buildTypeBFace,rgbaToRgb565} from "./watchface-builder.js?v=20260923-13";
 
-const APP_VERSION = "2026.09.24-18";
+const APP_VERSION = "2026.09.24-20";
 
 const UUID = {
   service: "0000feea-0000-1000-8000-00805f9b34fb",
@@ -24,18 +24,27 @@ const CMD = {
   SET_MOVE_PERIOD:0x73,QUERY_MOVE_PERIOD:0x83,FIND_WATCH:0x61,
 };
 const ARG = { YESTERDAY_STEPS:1, EARLIER_STEPS:2, YESTERDAY_SLEEP:3, EARLIER_SLEEP:4 };
-const el = Object.fromEntries(["connect","fetch","syncTime","measureHr","measureBp","exportCsv","exportJson","disconnect","state","vitals","activity","sleep","heart","log","faceFile","loadTypeB","uploadFace","activateCustomFace","faceIndex","faceInfo","faceProgress","faceUploadStatus","facePreview","faceTitle","faceAccent","faceBackgroundColor","faceBackgroundFile","clockStyle","transparentParts","movePart","partX","partY","showDate","showSteps","showHeart","showBattery","buildFace","downloadBuiltFace","builderInfo","readSettings","findWatch","settingsStatus","settingGoal","settingTimeSystem","settingUnits","saveBasics","quickViewEnabled","quickStart","quickEnd","saveQuickView","dndEnabled","dndStart","dndEnd","saveDnd","moveEnabled","movePeriod","moveSteps","moveStart","moveEnd","saveMove","alarmSlot","alarmTime","alarmEnabled","alarmDays","alarmSummary","saveAlarm"].map(id => [id, document.getElementById(id)]));
+const el = Object.fromEntries(["connect","chooseDevice","fetch","syncTime","measureHr","measureBp","exportCsv","exportJson","disconnect","state","vitals","activity","sleep","heart","log","faceFile","loadTypeB","uploadFace","activateCustomFace","faceIndex","faceInfo","faceProgress","faceUploadStatus","facePreview","faceTitle","faceAccent","faceBackgroundColor","faceBackgroundFile","clockStyle","transparentParts","movePart","partX","partY","showDate","showSteps","showHeart","showBattery","buildFace","downloadBuiltFace","builderInfo","readSettings","findWatch","settingsStatus","settingGoal","settingTimeSystem","settingUnits","saveBasics","quickViewEnabled","quickStart","quickEnd","saveQuickView","dndEnabled","dndStart","dndEnd","saveDnd","moveEnabled","movePeriod","moveSteps","moveStart","moveEnd","saveMove","alarmSlot","alarmTime","alarmEnabled","alarmDays","alarmSummary","saveAlarm"].map(id => [id, document.getElementById(id)]));
 const settingButtons=[...document.querySelectorAll(".watch-setting-action")];
+const appRoot=document.querySelector("main"),navButtons=[...document.querySelectorAll(".nav-button")];
 const conn = { device:null, server:null, steps:null, out:null, input:null, faceData:null, frame:[], expected:0, waiters:[], faceTransfer:null, faceAbortError:null, battery:null, faceTemplate:null };
 const MAX_SAFE_FACE_SIZE = 300*1024;
 let dataset = freshDataset();
 let selectedFace = null;
 let generatedFace = null;
 let customFaceBackground = null;
+let rememberedDevice=null;
+const REMEMBERED_DEVICE_KEY="magic3-remembered-device-id";
 
 function freshDataset() { return { generatedAt:null, device:{}, vitals:{heartRate:[],bloodPressure:[]}, activity:[], sleep:[], heartRate:[] }; }
 function log(message, error=false) { el.log.textContent += `[${new Date().toLocaleTimeString()}] ${message}\n`; el.log.scrollTop=el.log.scrollHeight; (error?console.error:console.log)(message); }
 function setState(message, kind="muted") { el.state.className=kind; el.state.textContent=message; }
+function setActivePage(page,scroll=true){
+  if(!["overview","device","faces","more"].includes(page))page="overview";
+  appRoot.dataset.activePage=page;
+  navButtons.forEach(button=>{const active=button.dataset.target===page;button.classList.toggle("active",active);if(active)button.setAttribute("aria-current","page");else button.removeAttribute("aria-current");});
+  if(scroll)window.scrollTo({top:0,behavior:"smooth"});
+}
 function delay(ms) { return new Promise(resolve => setTimeout(resolve,ms)); }
 function hex(bytes) { return [...bytes].map(v=>v.toString(16).padStart(2,"0")).join(" "); }
 function localDate(daysAgo=0) { const d=new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate()-daysAgo); return d.toLocaleDateString("sv-SE"); }
@@ -161,6 +170,7 @@ function disconnected() {
 }
 function setConnectedControls(connected) {
   el.connect.disabled=connected; el.fetch.disabled=!connected; el.syncTime.disabled=!connected; el.measureHr.disabled=!connected; el.measureBp.disabled=!connected; el.disconnect.disabled=!connected;
+  el.chooseDevice.disabled=connected;
   settingButtons.forEach(button=>button.disabled=!connected);
   el.settingsStatus.className=connected?"muted":"muted";if(!connected)el.settingsStatus.textContent="Verbind eerst het horloge.";
   el.activateCustomFace.disabled=!connected;
@@ -179,10 +189,30 @@ function setBusy(busy) {
   if(!busy && !conn.device?.gatt?.connected) setConnectedControls(false);
   else if(!busy)setConnectedControls(true);
 }
-async function connect() {
+function looksLikeMagic3(device){return /c17|magic\s*3|moy/i.test(device?.name||"");}
+function updateRememberedDeviceUi(){
+  if(rememberedDevice){el.connect.textContent=`${rememberedDevice.name||"C17"} verbinden`;el.chooseDevice.hidden=false;}
+  else {el.connect.textContent="Horloge kiezen";el.chooseDevice.hidden=true;}
+}
+async function prepareRememberedDevice(){
+  if(!navigator.bluetooth||typeof navigator.bluetooth.getDevices!=="function"){log("Deze browser kan een eerder gekozen Bluetooth-apparaat niet automatisch terugvinden.");updateRememberedDeviceUi();return;}
+  try{
+    const devices=await navigator.bluetooth.getDevices(),savedId=localStorage.getItem(REMEMBERED_DEVICE_KEY),matching=devices.filter(looksLikeMagic3);
+    rememberedDevice=devices.find(device=>device.id===savedId)??(matching.length===1?matching[0]:null);
+    if(rememberedDevice)log(`Eerder toegestaan horloge gevonden: ${rememberedDevice.name||"C17"}. De volgende verbinding heeft geen apparaatkiezer nodig.`);
+  }catch(error){log(`Eerder horloge opzoeken lukte niet: ${error.message}`);}
+  updateRememberedDeviceUi();
+}
+async function connect(forcePicker=false) {
   if(!navigator.bluetooth) throw new Error("Web Bluetooth ontbreekt. Gebruik Chrome of Edge op Windows.");
-  await disconnect(); log("Selecteer de Magic3/C17 in de Bluetooth-kiezer.");
-  conn.device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[UUID.service,UUID.deviceInfo,UUID.batteryService]});
+  await disconnect();
+  let device=!forcePicker?rememberedDevice:null;
+  if(device)log(`Opnieuw verbinden met onthouden horloge ${device.name||"C17"}; de Bluetooth-kiezer wordt overgeslagen.`);
+  else {
+    log("Selecteer de Magic3/C17 in de gefilterde Bluetooth-kiezer.");
+    device=await navigator.bluetooth.requestDevice({filters:[{services:[UUID.service]},{namePrefix:"C17"},{namePrefix:"c17"},{namePrefix:"Magic3"},{namePrefix:"MAGIC3"},{namePrefix:"MOY"},{namePrefix:"moy"}],optionalServices:[UUID.service,UUID.deviceInfo,UUID.batteryService]});
+  }
+  conn.device=device;
   conn.device.addEventListener("gattserverdisconnected",disconnected);
   conn.server=await conn.device.gatt.connect();
   const info=await conn.server.getPrimaryService(UUID.deviceInfo);
@@ -196,6 +226,7 @@ async function connect() {
   dataset.device={name:conn.device.name||"Magic3/C17",manufacturer};
   try { const battery=await conn.server.getPrimaryService(UUID.batteryService); dataset.device.battery=(await (await battery.getCharacteristic(UUID.batteryLevel)).readValue()).getUint8(0);conn.battery=dataset.device.battery; } catch { log("Batterijniveau is niet beschikbaar."); }
   setConnectedControls(true);
+  rememberedDevice=conn.device;try{localStorage.setItem(REMEMBERED_DEVICE_KEY,conn.device.id);}catch{}updateRememberedDeviceUi();
   setState(`Verbonden met ${dataset.device.name}; ${manufacturer} bevestigd${dataset.device.battery!==undefined?`, batterij ${dataset.device.battery}%`:""}.`,"ok");
   log(`Apparaatcontrole geslaagd: ${manufacturer}. Viewer gereed.`);
 }
@@ -645,7 +676,7 @@ function download(name,type,content){ const url=URL.createObjectURL(new Blob([co
 function fail(error){ log(`FOUT: ${error.message||error}`,true); setState(error.message||String(error),"bad"); setBusy(false); }
 function failFaceUpload(error){el.faceUploadStatus.className="bad";el.faceUploadStatus.textContent=`Upload niet gestart: ${error.message||error}`;fail(error);}
 
-el.connect.addEventListener("click",()=>connect().catch(fail)); el.fetch.addEventListener("click",()=>fetchData().catch(fail)); el.syncTime.addEventListener("click",()=>syncTime().catch(fail)); el.measureHr.addEventListener("click",()=>measureHeartRate().catch(fail)); el.measureBp.addEventListener("click",()=>measureBloodPressure().catch(fail)); el.disconnect.addEventListener("click",()=>disconnect().catch(fail)); el.exportCsv.addEventListener("click",exportCsv); el.exportJson.addEventListener("click",exportJson); el.faceFile.addEventListener("change",()=>selectFaceFile().catch(fail)); el.loadTypeB.addEventListener("click",()=>loadTypeBSample().catch(fail)); el.uploadFace.addEventListener("click",()=>uploadWatchFace().catch(failFaceUpload));
+el.connect.addEventListener("click",()=>connect().catch(fail));el.chooseDevice.addEventListener("click",()=>connect(true).catch(fail)); el.fetch.addEventListener("click",()=>fetchData().catch(fail)); el.syncTime.addEventListener("click",()=>syncTime().catch(fail)); el.measureHr.addEventListener("click",()=>measureHeartRate().catch(fail)); el.measureBp.addEventListener("click",()=>measureBloodPressure().catch(fail)); el.disconnect.addEventListener("click",()=>disconnect().catch(fail)); el.exportCsv.addEventListener("click",exportCsv); el.exportJson.addEventListener("click",exportJson); el.faceFile.addEventListener("change",()=>selectFaceFile().catch(fail)); el.loadTypeB.addEventListener("click",()=>loadTypeBSample().catch(fail)); el.uploadFace.addEventListener("click",()=>uploadWatchFace().catch(failFaceUpload));
 el.activateCustomFace.addEventListener("click",()=>activateLatestFace().catch(failFaceUpload));
 el.readSettings.addEventListener("click",()=>readWatchSettings().catch(fail));
 el.findWatch.addEventListener("click",()=>findWatch().catch(fail));
@@ -660,5 +691,8 @@ el.faceBackgroundFile.addEventListener("change",()=>loadFaceBackground().catch(f
 for(const input of [el.faceTitle,el.faceAccent,el.faceBackgroundColor,el.clockStyle,el.transparentParts,el.showDate,el.showSteps,el.showHeart,el.showBattery])input.addEventListener("input",editorChanged);
 el.movePart.addEventListener("change",syncPositionControls);el.partX.addEventListener("input",()=>setPartPosition(Number(el.partX.value),Number(el.partY.value)));el.partY.addEventListener("input",()=>setPartPosition(Number(el.partX.value),Number(el.partY.value)));
 el.facePreview.addEventListener("pointerdown",startPartDrag);el.facePreview.addEventListener("pointermove",movePartDrag);el.facePreview.addEventListener("pointerup",endPartDrag);el.facePreview.addEventListener("pointercancel",endPartDrag);
+navButtons.forEach(button=>button.addEventListener("click",()=>setActivePage(button.dataset.target)));
 syncPositionControls();
+setActivePage("overview",false);
 log(navigator.bluetooth?`Magic3-dashboard ${APP_VERSION} gereed. Kies eerst je Magic3/C17.`:"Web Bluetooth ontbreekt; open via localhost in Chrome of Edge.",!navigator.bluetooth);
+prepareRememberedDevice();

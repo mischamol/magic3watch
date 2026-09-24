@@ -5,74 +5,85 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Magic3 dashboard</title>
   <style>
-    :root { color-scheme:dark; font-family:Inter,ui-sans-serif,system-ui,sans-serif; --bg:#08111f; --panel:#111d30; --line:#263750; --ink:#edf4ff; --muted:#98a8bd; --blue:#55a7ff; --green:#68d7a1; --red:#ff8e9a; }
+    :root { color-scheme:light; font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; --bg:#f4f6f8; --panel:#fff; --soft:#f8fafb; --line:#e8edf0; --ink:#20272d; --muted:#8b959e; --blue:#16c7a5; --green:#16b98f; --red:#ff626e; --shadow:0 5px 18px rgba(32,51,61,.07); }
     * { box-sizing:border-box; }
-    body { margin:0; background:radial-gradient(circle at 85% 0,#173760 0,transparent 35%),var(--bg); color:var(--ink); line-height:1.5; }
-    main { width:min(1050px,calc(100% - 32px)); margin:34px auto 60px; }
-    h1 { margin:.2rem 0; font-size:clamp(1.8rem,4vw,2.7rem); letter-spacing:-.04em; }
-    h2 { font-size:1.05rem; margin:0 0 14px; }
-    p { margin:.45rem 0; } .muted { color:var(--muted); } .ok { color:var(--green); } .bad { color:var(--red); }
-    .hero,.panel { background:rgba(17,29,48,.94); border:1px solid var(--line); border-radius:16px; padding:20px; margin:16px 0; box-shadow:0 16px 45px rgba(0,0,0,.18); }
-    .actions { display:flex; flex-wrap:wrap; gap:9px; margin:18px 0 8px; }
-    button { font:inherit; font-weight:650; border:0; border-radius:10px; padding:11px 15px; color:#06101d; background:var(--blue); cursor:pointer; }
-    button.secondary { color:var(--ink); background:#243753; } button:disabled { opacity:.42; cursor:not-allowed; }
+    body { margin:0; background:var(--bg); color:var(--ink); line-height:1.45; padding-bottom:94px; }
+    main { width:min(1040px,calc(100% - 28px)); margin:0 auto 34px; }
+    h1 { margin:0; font-size:1.2rem; letter-spacing:-.02em; } h2 { font-size:1.1rem; margin:0 0 13px; } h3 { color:var(--ink); }
+    p { margin:.45rem 0; } code { background:#edf3f3; padding:.1rem .35rem; border-radius:5px; }
+    .muted { color:var(--muted); } .ok { color:var(--green); } .bad { color:var(--red); }
+    .appbar { position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between; gap:16px; margin:0 -14px 12px; padding:14px; background:rgba(255,255,255,.94); border-bottom:1px solid var(--line); backdrop-filter:blur(16px); }
+    .brand { display:flex; align-items:center; gap:11px; } .brand-mark { width:36px; height:36px; display:grid; place-items:center; border-radius:12px; color:#fff; font-weight:800; background:linear-gradient(145deg,#34d8b9,var(--blue)); box-shadow:0 6px 14px rgba(22,199,165,.25); }
+    .brand small { display:block; color:var(--muted); font-size:.72rem; }
+    .connection-actions { display:flex; align-items:center; gap:8px; } #state { max-width:430px; text-align:right; font-size:.84rem; }
+    .hero,.panel { background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:20px; margin:13px 0; box-shadow:var(--shadow); }
+    .hero { background:linear-gradient(135deg,#fff 35%,#effcf8); }
+    [data-page] { display:none; } main[data-active-page="overview"] [data-page="overview"],main[data-active-page="device"] [data-page="device"],main[data-active-page="faces"] [data-page="faces"],main[data-active-page="more"] [data-page="more"] { display:block; }
+    .page-intro { margin-bottom:16px; } .page-intro h2 { font-size:1.5rem; margin-bottom:4px; }
+    .actions { display:flex; flex-wrap:wrap; gap:9px; margin:16px 0 6px; }
+    button { font:inherit; font-weight:700; border:0; border-radius:12px; padding:11px 15px; color:#fff; background:var(--blue); box-shadow:0 4px 10px rgba(22,199,165,.18); cursor:pointer; }
+    button.secondary { color:#526069; background:#eef3f4; box-shadow:none; } button:disabled { opacity:.42; cursor:not-allowed; }
     .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
-    .card { background:#0b1627; border:1px solid var(--line); border-radius:13px; padding:16px; }
-    .date { color:var(--muted); font-size:.88rem; } .big { font-size:1.65rem; font-weight:750; margin:5px 0 2px; }
+    .card { background:var(--soft); border:1px solid var(--line); border-radius:15px; padding:16px; }
+    .date { color:var(--muted); font-size:.84rem; } .big { font-size:1.65rem; font-weight:750; margin:5px 0 2px; color:#263138; }
     .trio { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:12px; }
-    .trio span { color:var(--muted); font-size:.78rem; } .trio b { display:block; color:var(--ink); font-size:.98rem; }
-    .sleepbar { display:flex; height:14px; overflow:hidden; border-radius:8px; background:#233047; margin:12px 0; }
-    .stage-0 { background:#9aa9bd; } .stage-1 { background:#70b7ff; } .stage-2 { background:#635bce; } .stage-3 { background:#db7ee8; }
+    .trio span { color:var(--muted); font-size:.75rem; } .trio b { display:block; color:var(--ink); font-size:.94rem; }
+    .sleepbar { display:flex; height:11px; overflow:hidden; border-radius:8px; background:#edf1f3; margin:12px 0; }
+    .stage-0 { background:#bcc5cb; } .stage-1 { background:#64cfe0; } .stage-2 { background:#6875d8; } .stage-3 { background:#b881db; }
     .legend { display:flex; flex-wrap:wrap; gap:12px; font-size:.82rem; color:var(--muted); } .dot { display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px; }
-    table { width:100%; border-collapse:collapse; font-size:.92rem; } th,td { text-align:left; border-bottom:1px solid var(--line); padding:9px 6px; } th { color:var(--muted); font-weight:600; }
-    pre { min-height:90px; max-height:230px; overflow:auto; background:#050b14; color:#c8d7e8; padding:12px; border-radius:10px; white-space:pre-wrap; }
-    .empty { color:var(--muted); padding:14px 0; } .note { font-size:.86rem; color:var(--muted); }
+    table { width:100%; border-collapse:collapse; font-size:.9rem; } th,td { text-align:left; border-bottom:1px solid var(--line); padding:9px 6px; } th { color:var(--muted); font-weight:600; }
+    pre { min-height:110px; max-height:360px; overflow:auto; background:#222b31; color:#d6e2e6; padding:14px; border-radius:13px; white-space:pre-wrap; }
+    summary { cursor:pointer; font-weight:700; } .empty { color:var(--muted); padding:14px 0; } .note { font-size:.84rem; color:var(--muted); }
     .maker { display:grid; grid-template-columns:260px 1fr; gap:22px; align-items:start; margin-top:18px; }
-    .watch-preview { display:block; width:240px; height:280px; border:1px solid #3a4e69; border-radius:26px; background:#050b14; box-shadow:0 12px 30px rgba(0,0,0,.35); }
-    .controls { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
-    label.control { display:grid; gap:5px; color:var(--muted); font-size:.86rem; }
+    .watch-preview { display:block; width:240px; height:280px; border:5px solid #20272d; border-radius:30px; background:#07111f; box-shadow:0 12px 24px rgba(32,39,45,.2); touch-action:none; cursor:grab; }
+    .watch-preview:active { cursor:grabbing; } .controls { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    label.control { display:grid; gap:5px; color:#77828b; font-size:.84rem; }
     input[type="text"],input[type="file"] { color:var(--ink); max-width:100%; }
-    input[type="text"],input[type="number"],input[type="time"],select { width:100%; color:var(--ink); border:1px solid var(--line); border-radius:8px; background:#091426; padding:9px; }
-    input[type="color"] { width:100%; height:42px; border:1px solid var(--line); border-radius:8px; background:#091426; padding:3px; }
-    .checks { display:flex; flex-wrap:wrap; gap:12px; margin-top:12px; color:var(--muted); font-size:.9rem; }
+    input[type="text"],input[type="number"],input[type="time"],select { width:100%; color:var(--ink); border:1px solid #dfe5e8; border-radius:10px; background:#fff; padding:10px; }
+    input[type="color"] { width:100%; height:43px; border:1px solid #dfe5e8; border-radius:10px; background:#fff; padding:4px; }
+    input[type="checkbox"] { accent-color:var(--blue); }
+    .checks { display:flex; flex-wrap:wrap; gap:12px; margin-top:12px; color:#6f7b83; font-size:.88rem; }
     .subpanel { border-top:1px solid var(--line); margin-top:20px; padding-top:18px; }
-    .sample-face { display:flex; gap:16px; align-items:center; margin:14px 0 4px; padding:12px; border:1px solid var(--line); border-radius:12px; background:#0b1627; }
-    .sample-face img { width:96px; height:112px; object-fit:cover; border-radius:10px; border:1px solid #3a4e69; }
+    .sample-face { display:flex; gap:16px; align-items:center; margin:14px 0 4px; padding:14px; border:1px solid var(--line); border-radius:15px; background:var(--soft); }
+    .sample-face img { width:96px; height:112px; object-fit:cover; border-radius:11px; border:1px solid var(--line); }
     .settings-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:16px; }
-    .setting-card { background:#0b1627; border:1px solid var(--line); border-radius:13px; padding:15px; }
-    .setting-card h3 { margin:0 0 12px; font-size:.98rem; }
-    .setting-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
-    .setting-card .actions { margin:12px 0 0; }
-    .day-picker { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; color:var(--muted); font-size:.85rem; }
-    .watch-preview { touch-action:none; cursor:grab; }
-    .watch-preview:active { cursor:grabbing; }
-    @media(max-width:760px){ .grid,.settings-grid{grid-template-columns:1fr}.trio{grid-template-columns:repeat(3,1fr)} }
-    @media(max-width:650px){ .maker{grid-template-columns:1fr}.controls,.setting-fields{grid-template-columns:1fr}.watch-preview{margin:auto}.sample-face{align-items:flex-start} }
+    .setting-card { background:var(--soft); border:1px solid var(--line); border-radius:15px; padding:16px; }
+    .setting-card h3 { margin:0 0 12px; font-size:.98rem; } .setting-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .setting-card .actions { margin:12px 0 0; } .day-picker { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; color:var(--muted); font-size:.85rem; }
+    progress { accent-color:var(--blue); }
+    .bottom-nav { position:fixed; z-index:30; left:50%; bottom:12px; transform:translateX(-50%); width:min(560px,calc(100% - 24px)); display:grid; grid-template-columns:repeat(4,1fr); gap:4px; padding:7px; background:rgba(255,255,255,.96); border:1px solid var(--line); border-radius:20px; box-shadow:0 10px 30px rgba(34,51,60,.16); backdrop-filter:blur(18px); }
+    .nav-button { display:grid; place-items:center; gap:1px; min-height:51px; padding:5px; color:#9aa3aa; background:transparent; box-shadow:none; border-radius:14px; font-size:.72rem; }
+    .nav-button .nav-icon { font-size:1.18rem; line-height:1; } .nav-button.active { color:#fff; background:var(--blue); box-shadow:0 5px 12px rgba(22,199,165,.23); }
+    @media(max-width:760px){ .grid,.settings-grid{grid-template-columns:1fr}.trio{grid-template-columns:repeat(3,1fr)} #state{display:none}.hero,.panel{padding:17px} }
+    @media(max-width:650px){ main{width:min(100% - 20px,1040px)}.appbar{margin:0 -10px 10px}.maker{grid-template-columns:1fr}.controls,.setting-fields{grid-template-columns:1fr}.watch-preview{margin:auto}.sample-face{align-items:flex-start}.brand small{display:none} }
   </style>
 </head>
 <body>
-<main>
-  <div class="hero">
-    <div class="muted">MOYOUNG-V2 · lokale Web Bluetooth-tool</div>
-    <h1>Magic3 dashboard</h1>
-    <p>Lees stappen, afstand, calorieën, slaapfasen en opgeslagen hartslagmetingen rechtstreeks uit je horloge.</p>
-    <div class="actions">
-      <button id="connect">1. Magic3 kiezen</button>
-      <button id="fetch" disabled>2. Gegevens uitlezen</button>
-      <button id="syncTime" class="secondary" disabled>Tijd synchroniseren</button>
-      <button id="measureHr" class="secondary" disabled>Hartslag meten</button>
-      <button id="measureBp" class="secondary" disabled>Bloeddruk meten (experimenteel)</button>
-      <button id="exportCsv" class="secondary" disabled>CSV exporteren</button>
-      <button id="exportJson" class="secondary" disabled>JSON exporteren</button>
-      <button id="disconnect" class="secondary" disabled>Verbinding verbreken</button>
-    </div>
+<main data-active-page="overview">
+  <header class="appbar">
+    <div class="brand"><span class="brand-mark">M3</span><div><h1>Magic3</h1><small>MOYOUNG‑V2 dashboard</small></div></div>
     <p id="state" class="muted">Niet verbonden.</p>
-  </div>
+    <div class="connection-actions">
+      <button id="connect">Verbinden</button>
+      <button id="chooseDevice" class="secondary" hidden>Ander horloge</button>
+      <button id="disconnect" class="secondary" disabled>Loskoppelen</button>
+    </div>
+  </header>
 
-  <section class="panel">
+  <section class="hero" data-page="overview">
+    <div class="page-intro"><h2>Vandaag</h2><p class="muted">Je activiteit, slaap en actuele metingen rechtstreeks van je horloge.</p></div>
+    <div class="actions">
+      <button id="fetch" disabled>Gegevens vernieuwen</button>
+      <button id="measureHr" class="secondary" disabled>Hartslag meten</button>
+      <button id="measureBp" class="secondary" disabled>Bloeddruk meten</button>
+    </div>
+  </section>
+
+  <section class="panel" data-page="device">
     <h2>Horloge-instellingen</h2>
     <p>Lees eerst de huidige waarden uit. Alleen het onderdeel waarvan je op <strong>Opslaan</strong> klikt, wordt gewijzigd.</p>
     <div class="actions">
+      <button id="syncTime" class="secondary" disabled>Tijd synchroniseren</button>
       <button id="readSettings" class="watch-setting-action" disabled>Instellingen uitlezen</button>
       <button id="findWatch" class="secondary watch-setting-action" disabled>Vind mijn horloge</button>
     </div>
@@ -145,7 +156,7 @@
     <p class="note">Niet elke firmware ondersteunt elk commando. Een niet-ondersteunde instelling wordt gemeld en verandert de overige instellingen niet.</p>
   </section>
 
-  <section class="panel">
+  <section class="panel" data-page="faces">
     <h2>Watchface toevoegen</h2>
     <p>Maak hier zelf een eenvoudige 240×280-watchface. De maker bouwt lokaal een MoYoung Type-B <code>.bin</code>-bestand met MiniLZO, geschikt voor MOY-NBA5/template 34.</p>
     <div class="maker">
@@ -216,18 +227,18 @@
     <p class="note">De MOY-NBA5 begint met vijf watchfaces. Een geïnstalleerde custom Type-B-watchface wordt als zesde item toegevoegd en staat daarna op index 6. Zowel de meegeleverde officiële testwatchface als de eigen editor gebruiken Type B voor template 34.</p>
   </section>
 
-  <section class="panel">
+  <section class="panel" data-page="overview">
     <h2>Actuele metingen</h2>
     <p class="note">Draag het horloge strak maar comfortabel, houd je arm stil en wacht op het resultaat. Een meting stopt automatisch na maximaal 45 seconden.</p>
     <div id="vitals" class="grid"><div class="empty">Nog geen actuele meting uitgevoerd.</div></div>
   </section>
 
-  <section class="panel">
+  <section class="panel" data-page="overview">
     <h2>Activiteit</h2>
     <div id="activity" class="grid"><div class="empty">Nog geen gegevens uitgelezen.</div></div>
   </section>
 
-  <section class="panel">
+  <section class="panel" data-page="overview">
     <h2>Slaap</h2>
     <div class="legend">
       <span><i class="dot stage-0"></i>Wakker</span><span><i class="dot stage-1"></i>Licht</span>
@@ -236,18 +247,33 @@
     <div id="sleep"><div class="empty">Nog geen gegevens uitgelezen.</div></div>
   </section>
 
-  <section class="panel">
+  <section class="panel" data-page="overview">
     <h2>Hartslaggeschiedenis</h2>
     <div id="heart"><div class="empty">Nog geen opgeslagen metingen ontvangen.</div></div>
     <p class="note">Consumentensensor: alleen voor welzijn en trends, niet voor medische beslissingen.</p>
   </section>
 
-  <details class="panel">
+  <section class="panel" data-page="more">
+    <div class="page-intro"><h2>Meer</h2><p class="muted">Exporteer je lokale gegevens of bekijk technische informatie.</p></div>
+    <div class="actions">
+      <button id="exportCsv" class="secondary" disabled>CSV exporteren</button>
+      <button id="exportJson" class="secondary" disabled>JSON exporteren</button>
+    </div>
+    <p class="note">Gezondheidsgegevens blijven alleen in deze browserpagina totdat je ze exporteert of de pagina sluit.</p>
+  </section>
+
+  <details class="panel" data-page="more">
     <summary>Technisch logboek</summary>
     <pre id="log"></pre>
   </details>
-  <p class="note">Gezondheidsgegevens blijven in deze browserpagina tot je exporteert of de pagina sluit. Een watchface-upload schrijft alleen naar het daarvoor bedoelde custom-face-slot en verandert de firmware niet.</p>
+  <p class="note" data-page="more">Een watchface-upload schrijft alleen naar het custom-face-slot en verandert de firmware niet.</p>
 </main>
-<script type="module" src="./health-viewer.js?v=20260924-18"></script>
+<nav class="bottom-nav" aria-label="Hoofdnavigatie">
+  <button class="nav-button active" type="button" data-target="overview" aria-current="page"><span class="nav-icon">●</span><span>Vandaag</span></button>
+  <button class="nav-button" type="button" data-target="device"><span class="nav-icon">⌚</span><span>Horloge</span></button>
+  <button class="nav-button" type="button" data-target="faces"><span class="nav-icon">▣</span><span>Wijzerplaat</span></button>
+  <button class="nav-button" type="button" data-target="more"><span class="nav-icon">•••</span><span>Meer</span></button>
+</nav>
+<script type="module" src="./health-viewer.js?v=20260924-20"></script>
 </body>
 </html>

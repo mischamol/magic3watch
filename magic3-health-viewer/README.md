@@ -2,14 +2,20 @@
 
 Deze lokale Web-Bluetooth-tool synchroniseert de tijd, haalt gegevens op en kan een compatibele watchface installeren op een Magic3/C17 met originele Da Fit-firmware en fabrikant-ID `MOYOUNG-V2`.
 
+De interface volgt de lichte kaartstijl en turquoise accentkleur van Da Fit. De vaste navigatie verdeelt de functies over vier schermen: **Vandaag** voor gezondheid en activiteit, **Horloge** voor instellingen, **Wijzerplaat** voor de editor en upload, en **Meer** voor export en het technische logboek. De Bluetooth-verbinding blijft bovenaan ieder scherm bereikbaar.
+
 ## Starten
 
 1. Pak het zipbestand volledig uit.
 2. Sluit Da Fit en andere programma's die met het horloge verbonden zijn.
 3. Dubbelklik op `start-health-viewer.cmd` en laat het terminalvenster open.
 4. Gebruik de geopende pagina in Chrome of Edge.
-5. Klik **Magic3 kiezen** en daarna **Gegevens uitlezen**.
+5. Klik **Verbinden** en daarna **Gegevens vernieuwen**.
 6. Exporteer desgewenst alles als CSV of JSON.
+
+Na de eerste bevestiging onthoudt de pagina het gekozen C17-horloge zolang zij geopend blijft. Browserversies die `navigator.bluetooth.getDevices()` ondersteunen kunnen het eerder toegestane horloge ook na opnieuw openen terugvinden; dan verandert de verbindingsknop in **C17 verbinden** en wordt rechtstreeks opnieuw verbonden. Met **Ander horloge** kun je bewust opnieuw kiezen. Wanneer de browser deze experimentele heropenfunctie niet ondersteunt, blijft vanwege Web Bluetooth-beveiliging één keuze nodig, maar de apparaatkiezer wordt dan gefilterd op het Moyoung-servicetype en bekende Magic3/C17-namen in plaats van de volledige Bluetooth-lijst.
+
+Bluetooth-toestemming hoort bij het websiteadres. Start de tool daarom steeds met `start-health-viewer.cmd` en gebruik hetzelfde browserprofiel; bij een ander poortnummer of een gewiste browsertoestemming moet je één keer opnieuw kiezen.
 
 De lokale server zoekt zelf een vrije poort tussen 8840 en 8870. Node.js en Python zijn niet nodig.
 
