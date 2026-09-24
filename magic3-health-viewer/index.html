@@ -32,16 +32,22 @@
     .controls { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
     label.control { display:grid; gap:5px; color:var(--muted); font-size:.86rem; }
     input[type="text"],input[type="file"] { color:var(--ink); max-width:100%; }
-    input[type="text"],input[type="number"],select { width:100%; color:var(--ink); border:1px solid var(--line); border-radius:8px; background:#091426; padding:9px; }
+    input[type="text"],input[type="number"],input[type="time"],select { width:100%; color:var(--ink); border:1px solid var(--line); border-radius:8px; background:#091426; padding:9px; }
     input[type="color"] { width:100%; height:42px; border:1px solid var(--line); border-radius:8px; background:#091426; padding:3px; }
     .checks { display:flex; flex-wrap:wrap; gap:12px; margin-top:12px; color:var(--muted); font-size:.9rem; }
     .subpanel { border-top:1px solid var(--line); margin-top:20px; padding-top:18px; }
     .sample-face { display:flex; gap:16px; align-items:center; margin:14px 0 4px; padding:12px; border:1px solid var(--line); border-radius:12px; background:#0b1627; }
     .sample-face img { width:96px; height:112px; object-fit:cover; border-radius:10px; border:1px solid #3a4e69; }
+    .settings-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:16px; }
+    .setting-card { background:#0b1627; border:1px solid var(--line); border-radius:13px; padding:15px; }
+    .setting-card h3 { margin:0 0 12px; font-size:.98rem; }
+    .setting-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .setting-card .actions { margin:12px 0 0; }
+    .day-picker { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; color:var(--muted); font-size:.85rem; }
     .watch-preview { touch-action:none; cursor:grab; }
     .watch-preview:active { cursor:grabbing; }
-    @media(max-width:760px){ .grid{grid-template-columns:1fr}.trio{grid-template-columns:repeat(3,1fr)} }
-    @media(max-width:650px){ .maker{grid-template-columns:1fr}.controls{grid-template-columns:1fr}.watch-preview{margin:auto}.sample-face{align-items:flex-start} }
+    @media(max-width:760px){ .grid,.settings-grid{grid-template-columns:1fr}.trio{grid-template-columns:repeat(3,1fr)} }
+    @media(max-width:650px){ .maker{grid-template-columns:1fr}.controls,.setting-fields{grid-template-columns:1fr}.watch-preview{margin:auto}.sample-face{align-items:flex-start} }
   </style>
 </head>
 <body>
@@ -62,6 +68,82 @@
     </div>
     <p id="state" class="muted">Niet verbonden.</p>
   </div>
+
+  <section class="panel">
+    <h2>Horloge-instellingen</h2>
+    <p>Lees eerst de huidige waarden uit. Alleen het onderdeel waarvan je op <strong>Opslaan</strong> klikt, wordt gewijzigd.</p>
+    <div class="actions">
+      <button id="readSettings" class="watch-setting-action" disabled>Instellingen uitlezen</button>
+      <button id="findWatch" class="secondary watch-setting-action" disabled>Vind mijn horloge</button>
+    </div>
+    <p id="settingsStatus" class="muted">Verbind eerst het horloge.</p>
+
+    <div class="settings-grid">
+      <div class="setting-card">
+        <h3>Algemeen</h3>
+        <div class="setting-fields">
+          <label class="control">Dagelijks stappendoel
+            <input id="settingGoal" type="number" min="100" max="100000" step="100" value="10000">
+          </label>
+          <label class="control">Tijdnotatie
+            <select id="settingTimeSystem"><option value="1">24 uur</option><option value="0">12 uur</option></select>
+          </label>
+          <label class="control">Eenheden
+            <select id="settingUnits"><option value="0">Metrisch</option><option value="1">Imperiaal</option></select>
+          </label>
+        </div>
+        <div class="actions"><button id="saveBasics" class="secondary watch-setting-action" disabled>Algemeen opslaan</button></div>
+      </div>
+
+      <div class="setting-card">
+        <h3>Polsactivering</h3>
+        <label><input id="quickViewEnabled" type="checkbox"> scherm activeren bij polsbeweging</label>
+        <div class="setting-fields">
+          <label class="control">Vanaf <input id="quickStart" type="time" value="07:00"></label>
+          <label class="control">Tot <input id="quickEnd" type="time" value="23:00"></label>
+        </div>
+        <p class="note">Gebruik 00:00–00:00 voor de hele dag.</p>
+        <div class="actions"><button id="saveQuickView" class="secondary watch-setting-action" disabled>Polsactivering opslaan</button></div>
+      </div>
+
+      <div class="setting-card">
+        <h3>Niet storen</h3>
+        <label><input id="dndEnabled" type="checkbox"> niet-storen-schema inschakelen</label>
+        <div class="setting-fields">
+          <label class="control">Vanaf <input id="dndStart" type="time" value="22:00"></label>
+          <label class="control">Tot <input id="dndEnd" type="time" value="07:00"></label>
+        </div>
+        <div class="actions"><button id="saveDnd" class="secondary watch-setting-action" disabled>Niet storen opslaan</button></div>
+      </div>
+
+      <div class="setting-card">
+        <h3>Bewegingsherinnering</h3>
+        <label><input id="moveEnabled" type="checkbox"> herinneringen inschakelen</label>
+        <div class="setting-fields">
+          <label class="control">Na minuten <input id="movePeriod" type="number" min="10" max="180" step="5" value="30"></label>
+          <label class="control">Onder stappen <input id="moveSteps" type="number" min="0" max="255" step="10" value="100"></label>
+          <label class="control">Startuur <input id="moveStart" type="number" min="0" max="23" value="9"></label>
+          <label class="control">Einduur <input id="moveEnd" type="number" min="0" max="23" value="18"></label>
+        </div>
+        <div class="actions"><button id="saveMove" class="secondary watch-setting-action" disabled>Herinnering opslaan</button></div>
+      </div>
+
+      <div class="setting-card">
+        <h3>Wekker</h3>
+        <div class="setting-fields">
+          <label class="control">Wekkerslot (0–7) <input id="alarmSlot" type="number" min="0" max="7" value="0"></label>
+          <label class="control">Tijd <input id="alarmTime" type="time" value="07:00"></label>
+        </div>
+        <label><input id="alarmEnabled" type="checkbox" checked> wekker ingeschakeld</label>
+        <div id="alarmDays" class="day-picker" aria-label="Herhaaldagen">
+          <label><input type="checkbox" value="1" checked> ma</label><label><input type="checkbox" value="2" checked> di</label><label><input type="checkbox" value="3" checked> wo</label><label><input type="checkbox" value="4" checked> do</label><label><input type="checkbox" value="5" checked> vr</label><label><input type="checkbox" value="6"> za</label><label><input type="checkbox" value="0"> zo</label>
+        </div>
+        <p id="alarmSummary" class="note">Nog geen wekkers uitgelezen.</p>
+        <div class="actions"><button id="saveAlarm" class="secondary watch-setting-action" disabled>Wekker opslaan</button></div>
+      </div>
+    </div>
+    <p class="note">Niet elke firmware ondersteunt elk commando. Een niet-ondersteunde instelling wordt gemeld en verandert de overige instellingen niet.</p>
+  </section>
 
   <section class="panel">
     <h2>Watchface toevoegen</h2>
@@ -166,6 +248,6 @@
   </details>
   <p class="note">Gezondheidsgegevens blijven in deze browserpagina tot je exporteert of de pagina sluit. Een watchface-upload schrijft alleen naar het daarvoor bedoelde custom-face-slot en verandert de firmware niet.</p>
 </main>
-<script type="module" src="./health-viewer.js?v=20260924-17"></script>
+<script type="module" src="./health-viewer.js?v=20260924-18"></script>
 </body>
 </html>

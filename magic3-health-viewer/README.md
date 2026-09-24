@@ -22,6 +22,19 @@ De lokale server zoekt zelf een vrije poort tussen 8840 en 8870. Node.js en Pyth
 - Een experimentele bloeddrukschatting via Moyoung-commando `0x69`, als jouw firmware reageert.
 - Datum en tijd synchroniseren via Moyoung-commando `0x31`.
 
+## Horloge-instellingen
+
+Het dashboard kan de volgende Da Fit-instellingen rechtstreeks uitlezen en aanpassen:
+
+- dagelijks stappendoel, 12/24-uursnotatie en metrische of imperiale eenheden;
+- polsactivering met een optioneel tijdvenster;
+- een niet-storen-schema;
+- bewegingsherinneringen met interval, minimale stappen en actieve uren;
+- maximaal acht wekkerslots met herhaaldagen;
+- **Vind mijn horloge** om een tril- of geluidssignaal te starten.
+
+Lees eerst de waarden uit. Iedere kaart heeft een eigen knop, zodat andere instellingen niet per ongeluk met standaardwaarden worden overschreven. Na opslaan leest de tool het betreffende commando opnieuw uit wanneer de firmware dat ondersteunt. Niet iedere Moyoung-firmware ondersteunt alle instellingen.
+
 ## Watchface installeren
 
 De pagina bevat nu een officiële, compatibele Type-B-testwatchface uit de Da Fit-catalogus voor firmwarefamilie `NBA` en template 34. Klik eerst op **Type-B-voorbeeld laden** en upload die. Het horloge voegt de custom watchface toe als zesde item en de tool activeert daarna index 6. Daarmee kun je testen zonder Da Fit te installeren.

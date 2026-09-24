@@ -1,6 +1,6 @@
 import {buildTypeBFace,rgbaToRgb565} from "./watchface-builder.js?v=20260923-13";
 
-const APP_VERSION = "2026.09.24-17";
+const APP_VERSION = "2026.09.24-18";
 
 const UUID = {
   service: "0000feea-0000-1000-8000-00805f9b34fb",
@@ -14,9 +14,18 @@ const UUID = {
   batteryLevel: "00002a19-0000-1000-8000-00805f9b34fb",
 };
 const EXPECTED_MANUFACTURER = "MOYOUNG-V2";
-const CMD = { SYNC_TIME:0x31, SLEEP:0x32, PAST:0x33, HEART:0x35, BLOOD_PRESSURE:0x69, HEART_MEASURE:0x6d, SET_FACE:0x19, QUERY_FACE:0x29, QUERY_FACE_COUNT:0x84, DFU_PACKAGE_LENGTH:0xba };
+const CMD = {
+  SYNC_TIME:0x31,SLEEP:0x32,PAST:0x33,HEART:0x35,BLOOD_PRESSURE:0x69,HEART_MEASURE:0x6d,
+  SET_FACE:0x19,QUERY_FACE:0x29,QUERY_FACE_COUNT:0x84,DFU_PACKAGE_LENGTH:0xba,
+  SET_GOAL:0x16,QUERY_GOAL:0x26,SET_TIME_SYSTEM:0x17,QUERY_TIME_SYSTEM:0x27,
+  SET_QUICK_VIEW:0x18,QUERY_QUICK_VIEW:0x28,SET_UNITS:0x1a,QUERY_UNITS:0x2a,
+  SET_SEDENTARY:0x1d,QUERY_SEDENTARY:0x2d,SET_ALARM:0x11,QUERY_ALARM:0x21,
+  SET_DND:0x71,QUERY_DND:0x81,SET_QUICK_TIME:0x72,QUERY_QUICK_TIME:0x82,
+  SET_MOVE_PERIOD:0x73,QUERY_MOVE_PERIOD:0x83,FIND_WATCH:0x61,
+};
 const ARG = { YESTERDAY_STEPS:1, EARLIER_STEPS:2, YESTERDAY_SLEEP:3, EARLIER_SLEEP:4 };
-const el = Object.fromEntries(["connect","fetch","syncTime","measureHr","measureBp","exportCsv","exportJson","disconnect","state","vitals","activity","sleep","heart","log","faceFile","loadTypeB","uploadFace","activateCustomFace","faceIndex","faceInfo","faceProgress","faceUploadStatus","facePreview","faceTitle","faceAccent","faceBackgroundColor","faceBackgroundFile","clockStyle","transparentParts","movePart","partX","partY","showDate","showSteps","showHeart","showBattery","buildFace","downloadBuiltFace","builderInfo"].map(id => [id, document.getElementById(id)]));
+const el = Object.fromEntries(["connect","fetch","syncTime","measureHr","measureBp","exportCsv","exportJson","disconnect","state","vitals","activity","sleep","heart","log","faceFile","loadTypeB","uploadFace","activateCustomFace","faceIndex","faceInfo","faceProgress","faceUploadStatus","facePreview","faceTitle","faceAccent","faceBackgroundColor","faceBackgroundFile","clockStyle","transparentParts","movePart","partX","partY","showDate","showSteps","showHeart","showBattery","buildFace","downloadBuiltFace","builderInfo","readSettings","findWatch","settingsStatus","settingGoal","settingTimeSystem","settingUnits","saveBasics","quickViewEnabled","quickStart","quickEnd","saveQuickView","dndEnabled","dndStart","dndEnd","saveDnd","moveEnabled","movePeriod","moveSteps","moveStart","moveEnd","saveMove","alarmSlot","alarmTime","alarmEnabled","alarmDays","alarmSummary","saveAlarm"].map(id => [id, document.getElementById(id)]));
+const settingButtons=[...document.querySelectorAll(".watch-setting-action")];
 const conn = { device:null, server:null, steps:null, out:null, input:null, faceData:null, frame:[], expected:0, waiters:[], faceTransfer:null, faceAbortError:null, battery:null, faceTemplate:null };
 const MAX_SAFE_FACE_SIZE = 300*1024;
 let dataset = freshDataset();
@@ -152,6 +161,8 @@ function disconnected() {
 }
 function setConnectedControls(connected) {
   el.connect.disabled=connected; el.fetch.disabled=!connected; el.syncTime.disabled=!connected; el.measureHr.disabled=!connected; el.measureBp.disabled=!connected; el.disconnect.disabled=!connected;
+  settingButtons.forEach(button=>button.disabled=!connected);
+  el.settingsStatus.className=connected?"muted":"muted";if(!connected)el.settingsStatus.textContent="Verbind eerst het horloge.";
   el.activateCustomFace.disabled=!connected;
   // Keep upload clickable once a face exists, so a missing connection produces a useful explanation instead of a silent disabled button.
   el.uploadFace.disabled=!selectedFace;
@@ -162,6 +173,7 @@ function setConnectedControls(connected) {
 }
 function setBusy(busy) {
   for(const button of [el.fetch,el.syncTime,el.measureHr,el.measureBp,el.uploadFace,el.activateCustomFace]) button.disabled=busy;
+  settingButtons.forEach(button=>button.disabled=busy);
   el.faceFile.disabled=busy;el.faceIndex.disabled=busy;
   el.buildFace.disabled=busy; el.faceBackgroundFile.disabled=busy;
   if(!busy && !conn.device?.gatt?.connected) setConnectedControls(false);
@@ -276,6 +288,72 @@ async function measureBloodPressure() {
     setBusy(false);
   }
 }
+
+function requireConnected(){if(!conn.device?.gatt?.connected)throw new Error("Het horloge is niet verbonden.");}
+function boundedInt(input,min,max,label){const value=Math.round(Number(input.value));if(!Number.isFinite(value)||value<min||value>max)throw new Error(`${label} moet tussen ${min} en ${max} liggen.`);return value;}
+function parseClock(input,label){const match=/^(\d{2}):(\d{2})$/.exec(input.value);if(!match)throw new Error(`Vul een geldige tijd in voor ${label}.`);const hour=Number(match[1]),minute=Number(match[2]);if(hour>23||minute>59)throw new Error(`Ongeldige tijd voor ${label}.`);return {hour,minute};}
+function clockText(hour,minute){return `${String(hour).padStart(2,"0")}:${String(minute).padStart(2,"0")}`;}
+function goalFromPayload(payload){if(payload.length<4)throw new Error("Het antwoord op het stappendoel is te kort.");return (payload[0]|(payload[1]<<8)|(payload[2]<<16)|(payload[3]<<24))>>>0;}
+function decodeSettingRange(payload){
+  if(payload.length<4)throw new Error("Het antwoord op het tijdschema is te kort.");
+  const candidates=[[(payload[0]<<8)|payload[1],(payload[2]<<8)|payload[3]],[payload[0]|(payload[1]<<8),payload[2]|(payload[3]<<8)]];
+  let range=candidates.find(([start,end])=>start<=1439&&end<=1439);
+  if(!range&&payload[0]<=23&&payload[1]<=59&&payload[2]<=23&&payload[3]<=59)return {startH:payload[0],startM:payload[1],endH:payload[2],endM:payload[3]};
+  if(!range)throw new Error(`Onbekende tijdschema-indeling: ${hex(payload)}.`);
+  return {startH:Math.floor(range[0]/60),startM:range[0]%60,endH:Math.floor(range[1]/60),endM:range[1]%60};
+}
+function decodeAlarms(payload){
+  let data=payload,count;
+  if(data.length%8===3){count=data[2];data=data.slice(3);}else if(data.length%8===0)count=data.length/8;else throw new Error(`Onbekende wekkerindeling van ${data.length} bytes.`);
+  const names=["zo","ma","di","wo","do","vr","za"],result=[];
+  for(let i=0;i<Math.min(count,Math.floor(data.length/8));i++){const item=data.slice(i*8,i*8+8),mask=item[7];result.push({slot:item[0],enabled:item[1]!==0,hour:item[3],minute:item[4],mask,days:names.filter((_,day)=>(mask&(1<<day))!==0)});}
+  return result;
+}
+async function settingRequest(command,label,timeout=3500){try{return await request(command,[],null,timeout);}catch(error){log(`${label}: niet beschikbaar (${error.message})`);return null;}}
+async function writeSetting(command,payload,label){await write(packet(command,payload));log(`${label} verzonden (0x${command.toString(16)}: ${hex(payload)||"geen payload"}).`);await delay(180);}
+function showSettingsStatus(message,ok=true){el.settingsStatus.className=ok?"ok":"bad";el.settingsStatus.textContent=message;}
+function applyGoal(payload){const goal=goalFromPayload(payload);if(goal>=100&&goal<=1000000)el.settingGoal.value=String(goal);return `${goal.toLocaleString("nl-NL")} stappen`;}
+function applyTimeSystem(payload){if(!payload.length)throw new Error("Leeg antwoord op tijdnotatie.");el.settingTimeSystem.value=payload[0]===0?"0":"1";return payload[0]===0?"12 uur":"24 uur";}
+function applyUnits(payload){if(!payload.length)throw new Error("Leeg antwoord op eenheden.");el.settingUnits.value=payload[0]===1?"1":"0";return payload[0]===1?"imperiaal":"metrisch";}
+function applyQuick(payload){if(!payload.length)throw new Error("Leeg antwoord op polsactivering.");el.quickViewEnabled.checked=payload[0]!==0;return el.quickViewEnabled.checked?"aan":"uit";}
+function applyRange(payload,startInput,endInput){const range=decodeSettingRange(payload);startInput.value=clockText(range.startH,range.startM);endInput.value=clockText(range.endH,range.endM);return range;}
+function applyMove(payload){if(payload.length<4)throw new Error("Het antwoord op de bewegingsherinnering is te kort.");el.movePeriod.value=String(payload[0]);el.moveSteps.value=String(payload[1]);el.moveStart.value=String(payload[2]);el.moveEnd.value=String(payload[3]);return `${payload[0]} min, ${payload[2]}–${payload[3]} uur`;}
+function applyAlarms(payload){
+  const alarms=decodeAlarms(payload),names=alarms.map(alarm=>`slot ${alarm.slot}: ${clockText(alarm.hour,alarm.minute)} · ${alarm.enabled?"aan":"uit"}${alarm.days.length?` · ${alarm.days.join("/")}`:""}`);
+  el.alarmSummary.textContent=names.length?names.join(" | "):"Geen wekkers ingesteld.";
+  const selected=alarms.find(alarm=>alarm.slot===Number(el.alarmSlot.value))??alarms[0];
+  if(selected){el.alarmSlot.value=String(selected.slot);el.alarmTime.value=clockText(selected.hour,selected.minute);el.alarmEnabled.checked=selected.enabled;for(const input of el.alarmDays.querySelectorAll('input[type="checkbox"]'))input.checked=(selected.mask&(1<<Number(input.value)))!==0;}
+  return `${alarms.length} wekker${alarms.length===1?"":"s"}`;
+}
+async function readWatchSettings(nested=false){
+  requireConnected();if(!nested)setBusy(true);showSettingsStatus("Instellingen worden uitgelezen…",true);const found=[],missing=[];
+  const read=async(command,label,apply)=>{const payload=await settingRequest(command,label);if(!payload){missing.push(label);return;}try{found.push(`${label}: ${apply(payload)}`);}catch(error){missing.push(label);log(`${label}: ${error.message}`,true);}};
+  try{
+    await read(CMD.QUERY_GOAL,"Stappendoel",applyGoal);await read(CMD.QUERY_TIME_SYSTEM,"Tijdnotatie",applyTimeSystem);await read(CMD.QUERY_UNITS,"Eenheden",applyUnits);
+    await read(CMD.QUERY_QUICK_VIEW,"Polsactivering",applyQuick);await read(CMD.QUERY_QUICK_TIME,"Polsschema",payload=>{const range=applyRange(payload,el.quickStart,el.quickEnd);return `${clockText(range.startH,range.startM)}–${clockText(range.endH,range.endM)}`;});
+    await read(CMD.QUERY_DND,"Niet storen",payload=>{const range=applyRange(payload,el.dndStart,el.dndEnd);el.dndEnabled.checked=range.startH+range.startM+range.endH+range.endM!==0;return el.dndEnabled.checked?`${el.dndStart.value}–${el.dndEnd.value}`:"uit";});
+    await read(CMD.QUERY_SEDENTARY,"Bewegingsherinnering",payload=>{if(!payload.length)throw new Error("Leeg antwoord.");el.moveEnabled.checked=payload[0]!==0;return el.moveEnabled.checked?"aan":"uit";});
+    await read(CMD.QUERY_MOVE_PERIOD,"Bewegingsschema",applyMove);await read(CMD.QUERY_ALARM,"Wekkers",applyAlarms);
+    const summary=found.length?found.join(" · "):"Geen ondersteunde instellingen ontvangen.";showSettingsStatus(`${summary}${missing.length?` · Niet beschikbaar: ${missing.join(", ")}`:""}`,found.length>0);log(`Instellingen uitgelezen: ${found.join("; ")||"geen antwoorden"}.`);
+  }finally{if(!nested)setBusy(false);}
+}
+async function saveBasics(){
+  requireConnected();setBusy(true);try{const goal=boundedInt(el.settingGoal,100,100000,"Stappendoel"),goalBytes=[(goal>>>24)&255,(goal>>>16)&255,(goal>>>8)&255,goal&255];await writeSetting(CMD.SET_GOAL,goalBytes,"Stappendoel");await writeSetting(CMD.SET_TIME_SYSTEM,[Number(el.settingTimeSystem.value)],"Tijdnotatie");await writeSetting(CMD.SET_UNITS,[Number(el.settingUnits.value)],"Eenheden");const checks=[];for(const [cmd,label,apply] of [[CMD.QUERY_GOAL,"stappendoel",applyGoal],[CMD.QUERY_TIME_SYSTEM,"tijdnotatie",applyTimeSystem],[CMD.QUERY_UNITS,"eenheden",applyUnits]]){const payload=await settingRequest(cmd,label);if(payload)checks.push(apply(payload));}showSettingsStatus(`Algemene instellingen opgeslagen${checks.length?` en teruggelezen: ${checks.join(", ")}`:"; teruglezen werd niet ondersteund"}.`);}
+  finally{setBusy(false);}
+}
+async function saveQuickView(){
+  requireConnected();const start=parseClock(el.quickStart,"polsactivering vanaf"),end=parseClock(el.quickEnd,"polsactivering tot");setBusy(true);try{await writeSetting(CMD.SET_QUICK_VIEW,[el.quickViewEnabled.checked?1:0],"Polsactivering");await writeSetting(CMD.SET_QUICK_TIME,[start.hour,start.minute,end.hour,end.minute],"Polsschema");const enabled=await settingRequest(CMD.QUERY_QUICK_VIEW,"Polsactivering"),range=await settingRequest(CMD.QUERY_QUICK_TIME,"Polsschema");if(enabled)applyQuick(enabled);if(range)applyRange(range,el.quickStart,el.quickEnd);showSettingsStatus(`Polsactivering opgeslagen: ${el.quickViewEnabled.checked?`${el.quickStart.value}–${el.quickEnd.value}`:"uit"}.`);}finally{setBusy(false);}
+}
+async function saveDnd(){
+  requireConnected();const start=parseClock(el.dndStart,"niet storen vanaf"),end=parseClock(el.dndEnd,"niet storen tot"),payload=el.dndEnabled.checked?[start.hour,start.minute,end.hour,end.minute]:[0,0,0,0];setBusy(true);try{await writeSetting(CMD.SET_DND,payload,"Niet storen");const response=await settingRequest(CMD.QUERY_DND,"Niet storen");if(response){const range=applyRange(response,el.dndStart,el.dndEnd);el.dndEnabled.checked=range.startH+range.startM+range.endH+range.endM!==0;}showSettingsStatus(`Niet storen opgeslagen: ${el.dndEnabled.checked?`${el.dndStart.value}–${el.dndEnd.value}`:"uit"}.`);}finally{setBusy(false);}
+}
+async function saveMove(){
+  requireConnected();const period=boundedInt(el.movePeriod,10,180,"Aantal minuten"),steps=boundedInt(el.moveSteps,0,255,"Aantal stappen"),start=boundedInt(el.moveStart,0,23,"Startuur"),end=boundedInt(el.moveEnd,0,23,"Einduur");setBusy(true);try{await writeSetting(CMD.SET_SEDENTARY,[el.moveEnabled.checked?1:0],"Bewegingsherinnering");await writeSetting(CMD.SET_MOVE_PERIOD,[period,steps,start,end],"Bewegingsschema");const enabled=await settingRequest(CMD.QUERY_SEDENTARY,"Bewegingsherinnering"),range=await settingRequest(CMD.QUERY_MOVE_PERIOD,"Bewegingsschema");if(enabled)el.moveEnabled.checked=enabled[0]!==0;if(range)applyMove(range);showSettingsStatus(`Bewegingsherinnering opgeslagen: ${el.moveEnabled.checked?`${el.movePeriod.value} minuten, ${el.moveStart.value}–${el.moveEnd.value} uur`:"uit"}.`);}finally{setBusy(false);}
+}
+async function saveAlarm(){
+  requireConnected();const slot=boundedInt(el.alarmSlot,0,7,"Wekkerslot"),time=parseClock(el.alarmTime,"wekker"),days=[...el.alarmDays.querySelectorAll('input[type="checkbox"]:checked')].map(input=>Number(input.value));if(el.alarmEnabled.checked&&!days.length)throw new Error("Selecteer minimaal één herhaaldag, of schakel de wekker uit.");const mask=days.reduce((value,day)=>value|(1<<day),0),repeat=mask===0x7f?1:mask?2:0,payload=[slot,el.alarmEnabled.checked?1:0,repeat,time.hour,time.minute,0,0,mask];setBusy(true);try{await writeSetting(CMD.SET_ALARM,payload,"Wekker");const response=await settingRequest(CMD.QUERY_ALARM,"Wekkers",4500);if(response)applyAlarms(response);showSettingsStatus(`Wekker in slot ${slot} opgeslagen: ${el.alarmEnabled.checked?`${el.alarmTime.value} (${days.length} dagen)`:"uit"}.`);}finally{setBusy(false);}
+}
+async function findWatch(){requireConnected();setBusy(true);try{await writeSetting(CMD.FIND_WATCH,[],"Vind mijn horloge");showSettingsStatus("Zoeksignaal verzonden; het horloge hoort nu te trillen of geluid te maken.");}finally{await delay(500);setBusy(false);}}
 
 const FACE_LAYOUT = {panel:"#0b1627",big:{width:42,height:64},small:{width:14,height:22}};
 const editorParts = {
@@ -569,6 +647,13 @@ function failFaceUpload(error){el.faceUploadStatus.className="bad";el.faceUpload
 
 el.connect.addEventListener("click",()=>connect().catch(fail)); el.fetch.addEventListener("click",()=>fetchData().catch(fail)); el.syncTime.addEventListener("click",()=>syncTime().catch(fail)); el.measureHr.addEventListener("click",()=>measureHeartRate().catch(fail)); el.measureBp.addEventListener("click",()=>measureBloodPressure().catch(fail)); el.disconnect.addEventListener("click",()=>disconnect().catch(fail)); el.exportCsv.addEventListener("click",exportCsv); el.exportJson.addEventListener("click",exportJson); el.faceFile.addEventListener("change",()=>selectFaceFile().catch(fail)); el.loadTypeB.addEventListener("click",()=>loadTypeBSample().catch(fail)); el.uploadFace.addEventListener("click",()=>uploadWatchFace().catch(failFaceUpload));
 el.activateCustomFace.addEventListener("click",()=>activateLatestFace().catch(failFaceUpload));
+el.readSettings.addEventListener("click",()=>readWatchSettings().catch(fail));
+el.findWatch.addEventListener("click",()=>findWatch().catch(fail));
+el.saveBasics.addEventListener("click",()=>saveBasics().catch(fail));
+el.saveQuickView.addEventListener("click",()=>saveQuickView().catch(fail));
+el.saveDnd.addEventListener("click",()=>saveDnd().catch(fail));
+el.saveMove.addEventListener("click",()=>saveMove().catch(fail));
+el.saveAlarm.addEventListener("click",()=>saveAlarm().catch(fail));
 el.buildFace.addEventListener("click",()=>{try{makeWatchFace();}catch(error){fail(error);}});
 el.downloadBuiltFace.addEventListener("click",()=>{if(generatedFace)download(generatedFace.name,"application/octet-stream",generatedFace.bytes);});
 el.faceBackgroundFile.addEventListener("change",()=>loadFaceBackground().catch(fail));
