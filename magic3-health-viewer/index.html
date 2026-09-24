@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="nl">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -62,218 +62,224 @@
 <main data-active-page="overview">
   <header class="appbar">
     <div class="brand"><span class="brand-mark">M3</span><div><h1>Magic3</h1><small>MOYOUNG‑V2 dashboard</small></div></div>
-    <p id="state" class="muted">Niet verbonden.</p>
+    <p id="state" class="muted">Not connected.</p>
     <div class="connection-actions">
-      <button id="connect">Verbinden</button>
-      <button id="chooseDevice" class="secondary" hidden>Ander horloge</button>
-      <button id="disconnect" class="secondary" disabled>Loskoppelen</button>
+      <button id="connect">Connect</button>
+      <button id="chooseDevice" class="secondary" hidden>Choose another watch</button>
+      <button id="disconnect" class="secondary" disabled>Disconnect</button>
     </div>
   </header>
 
   <section class="hero" data-page="overview">
-    <div class="page-intro"><h2>Vandaag</h2><p class="muted">Je activiteit, slaap en actuele metingen rechtstreeks van je horloge.</p></div>
+    <div class="page-intro"><h2>Today</h2><p class="muted">Activity, sleep and current measurements directly from your watch.</p></div>
     <div class="actions">
-      <button id="fetch" disabled>Gegevens vernieuwen</button>
-      <button id="measureHr" class="secondary" disabled>Hartslag meten</button>
-      <button id="measureBp" class="secondary" disabled>Bloeddruk meten</button>
+      <button id="fetch" disabled>Refresh data</button>
+      <button id="measureHr" class="secondary" disabled>Measure heart rate</button>
+      <button id="measureBp" class="secondary" disabled>Measure blood pressure</button>
     </div>
   </section>
 
   <section class="panel" data-page="device">
-    <h2>Horloge-instellingen</h2>
-    <p>Lees eerst de huidige waarden uit. Alleen het onderdeel waarvan je op <strong>Opslaan</strong> klikt, wordt gewijzigd.</p>
+    <h2>Watch settings</h2>
+    <p>Read the current values first. Only the section whose <strong>Save</strong> button you click will be changed.</p>
     <div class="actions">
-      <button id="syncTime" class="secondary" disabled>Tijd synchroniseren</button>
-      <button id="readSettings" class="watch-setting-action" disabled>Instellingen uitlezen</button>
-      <button id="findWatch" class="secondary watch-setting-action" disabled>Vind mijn horloge</button>
+      <button id="syncTime" class="secondary" disabled>Sync time</button>
+      <button id="readSettings" class="watch-setting-action" disabled>Read settings</button>
+      <button id="findWatch" class="secondary watch-setting-action" disabled>Find my watch</button>
     </div>
-    <p id="settingsStatus" class="muted">Verbind eerst het horloge.</p>
+    <p id="settingsStatus" class="muted">Connect the watch first.</p>
 
     <div class="settings-grid">
       <div class="setting-card">
-        <h3>Algemeen</h3>
+        <h3>General</h3>
         <div class="setting-fields">
-          <label class="control">Dagelijks stappendoel
+          <label class="control">Daily step goal
             <input id="settingGoal" type="number" min="100" max="100000" step="100" value="10000">
           </label>
-          <label class="control">Tijdnotatie
-            <select id="settingTimeSystem"><option value="1">24 uur</option><option value="0">12 uur</option></select>
+          <label class="control">Time format
+            <select id="settingTimeSystem"><option value="1">24 hour</option><option value="0">12 hour</option></select>
           </label>
-          <label class="control">Eenheden
-            <select id="settingUnits"><option value="0">Metrisch</option><option value="1">Imperiaal</option></select>
+          <label class="control">Units
+            <select id="settingUnits"><option value="0">Metric</option><option value="1">Imperial</option></select>
           </label>
         </div>
-        <div class="actions"><button id="saveBasics" class="secondary watch-setting-action" disabled>Algemeen opslaan</button></div>
+        <div class="actions"><button id="saveBasics" class="secondary watch-setting-action" disabled>Save general settings</button></div>
       </div>
 
       <div class="setting-card">
-        <h3>Polsactivering</h3>
-        <label><input id="quickViewEnabled" type="checkbox"> scherm activeren bij polsbeweging</label>
+        <h3>Raise to wake</h3>
+        <label><input id="quickViewEnabled" type="checkbox"> activate display on wrist movement</label>
         <div class="setting-fields">
-          <label class="control">Vanaf <input id="quickStart" type="time" value="07:00"></label>
-          <label class="control">Tot <input id="quickEnd" type="time" value="23:00"></label>
+          <label class="control">From <input id="quickStart" type="time" value="07:00"></label>
+          <label class="control">Until <input id="quickEnd" type="time" value="23:00"></label>
         </div>
-        <p class="note">Gebruik 00:00–00:00 voor de hele dag.</p>
-        <div class="actions"><button id="saveQuickView" class="secondary watch-setting-action" disabled>Polsactivering opslaan</button></div>
+        <p class="note">Use 00:00–00:00 for the entire day.</p>
+        <div class="actions"><button id="saveQuickView" class="secondary watch-setting-action" disabled>Save raise to wake</button></div>
       </div>
 
       <div class="setting-card">
-        <h3>Niet storen</h3>
-        <label><input id="dndEnabled" type="checkbox"> niet-storen-schema inschakelen</label>
+        <h3>Do not disturb</h3>
+        <label><input id="dndEnabled" type="checkbox"> enable do-not-disturb schedule</label>
         <div class="setting-fields">
-          <label class="control">Vanaf <input id="dndStart" type="time" value="22:00"></label>
-          <label class="control">Tot <input id="dndEnd" type="time" value="07:00"></label>
+          <label class="control">From <input id="dndStart" type="time" value="22:00"></label>
+          <label class="control">Until <input id="dndEnd" type="time" value="07:00"></label>
         </div>
-        <div class="actions"><button id="saveDnd" class="secondary watch-setting-action" disabled>Niet storen opslaan</button></div>
+        <div class="actions"><button id="saveDnd" class="secondary watch-setting-action" disabled>Save do not disturb</button></div>
       </div>
 
       <div class="setting-card">
-        <h3>Bewegingsherinnering</h3>
-        <label><input id="moveEnabled" type="checkbox"> herinneringen inschakelen</label>
+        <h3>Movement reminder</h3>
+        <label><input id="moveEnabled" type="checkbox"> enable reminders</label>
         <div class="setting-fields">
-          <label class="control">Na minuten <input id="movePeriod" type="number" min="10" max="180" step="5" value="30"></label>
-          <label class="control">Onder stappen <input id="moveSteps" type="number" min="0" max="255" step="10" value="100"></label>
-          <label class="control">Startuur <input id="moveStart" type="number" min="0" max="23" value="9"></label>
-          <label class="control">Einduur <input id="moveEnd" type="number" min="0" max="23" value="18"></label>
+          <label class="control">After minutes <input id="movePeriod" type="number" min="10" max="180" step="5" value="30"></label>
+          <label class="control">Below steps <input id="moveSteps" type="number" min="0" max="255" step="10" value="100"></label>
+          <label class="control">Start hour <input id="moveStart" type="number" min="0" max="23" value="9"></label>
+          <label class="control">End hour <input id="moveEnd" type="number" min="0" max="23" value="18"></label>
         </div>
-        <div class="actions"><button id="saveMove" class="secondary watch-setting-action" disabled>Herinnering opslaan</button></div>
+        <div class="actions"><button id="saveMove" class="secondary watch-setting-action" disabled>Save reminder</button></div>
       </div>
 
       <div class="setting-card">
-        <h3>Wekker</h3>
+        <h3>Alarm</h3>
         <div class="setting-fields">
-          <label class="control">Wekkerslot (0–7) <input id="alarmSlot" type="number" min="0" max="7" value="0"></label>
-          <label class="control">Tijd <input id="alarmTime" type="time" value="07:00"></label>
+          <label class="control">Alarm slot (0–7) <input id="alarmSlot" type="number" min="0" max="7" value="0"></label>
+          <label class="control">Time <input id="alarmTime" type="time" value="07:00"></label>
         </div>
-        <label><input id="alarmEnabled" type="checkbox" checked> wekker ingeschakeld</label>
-        <div id="alarmDays" class="day-picker" aria-label="Herhaaldagen">
-          <label><input type="checkbox" value="1" checked> ma</label><label><input type="checkbox" value="2" checked> di</label><label><input type="checkbox" value="3" checked> wo</label><label><input type="checkbox" value="4" checked> do</label><label><input type="checkbox" value="5" checked> vr</label><label><input type="checkbox" value="6"> za</label><label><input type="checkbox" value="0"> zo</label>
+        <label><input id="alarmEnabled" type="checkbox" checked> alarm enabled</label>
+        <div id="alarmDays" class="day-picker" aria-label="Repeat days">
+          <label><input type="checkbox" value="1" checked> Mon</label><label><input type="checkbox" value="2" checked> Tue</label><label><input type="checkbox" value="3" checked> Wed</label><label><input type="checkbox" value="4" checked> Thu</label><label><input type="checkbox" value="5" checked> Fri</label><label><input type="checkbox" value="6"> Sat</label><label><input type="checkbox" value="0"> Sun</label>
         </div>
-        <p id="alarmSummary" class="note">Nog geen wekkers uitgelezen.</p>
-        <div class="actions"><button id="saveAlarm" class="secondary watch-setting-action" disabled>Wekker opslaan</button></div>
+        <p id="alarmSummary" class="note">No alarms have been read yet.</p>
+        <div class="actions"><button id="saveAlarm" class="secondary watch-setting-action" disabled>Save alarm</button></div>
       </div>
     </div>
-    <p class="note">Niet elke firmware ondersteunt elk commando. Een niet-ondersteunde instelling wordt gemeld en verandert de overige instellingen niet.</p>
+    <p class="note">Not every firmware supports every command. An unsupported setting is reported without changing the other settings.</p>
   </section>
 
   <section class="panel" data-page="faces">
-    <h2>Watchface toevoegen</h2>
-    <p>Maak hier zelf een eenvoudige 240×280-watchface. De maker bouwt lokaal een MoYoung Type-B <code>.bin</code>-bestand met MiniLZO, geschikt voor MOY-NBA5/template 34.</p>
+    <h2>Add a watch face</h2>
+    <p>Create a simple 240×280 watch face. The editor builds a MoYoung Type-B <code>.bin</code> file locally with MiniLZO, compatible with MOY-NBA5/template 34.</p>
     <div class="maker">
-      <canvas id="facePreview" class="watch-preview" width="240" height="280" aria-label="Voorbeeld van de watchface"></canvas>
+      <canvas id="facePreview" class="watch-preview" width="240" height="280" aria-label="Watch face preview"></canvas>
       <div>
         <div class="controls">
-          <label class="control">Titel
+          <label class="control">Title
             <input id="faceTitle" type="text" maxlength="12" value="MAGIC 3">
           </label>
-          <label class="control">Accentkleur
+          <label class="control">Accent colour
             <input id="faceAccent" type="color" value="#55d6be">
           </label>
-          <label class="control">Achtergrondkleur
+          <label class="control">Background colour
             <input id="faceBackgroundColor" type="color" value="#07111f">
           </label>
-          <label class="control">Eigen achtergrond (optioneel)
+          <label class="control">Custom background (optional)
             <input id="faceBackgroundFile" type="file" accept="image/png,image/jpeg,image/webp">
           </label>
-          <label class="control">Tijdweergave
-            <select id="clockStyle"><option value="digital">Digitale klok</option><option value="binary">Binaire BCD-klok (horizontaal)</option><option value="analog">Analoge klok</option></select>
+          <label class="control">Background image opacity (%)
+            <input id="backgroundOpacity" type="number" min="0" max="100" step="5" value="100">
           </label>
-          <label class="control">Onderdeel verplaatsen
-            <select id="movePart"><option value="time">Tijd</option><option value="date">Datum</option><option value="steps">Stappen</option><option value="heart">Hartslag</option><option value="battery">Batterij</option></select>
+          <label class="control">Time display
+            <select id="clockStyle"><option value="digital">Digital clock</option><option value="binary">Binary BCD clock (horizontal)</option><option value="analog">Analogue clock</option></select>
           </label>
-          <label class="control">X-positie
+          <label class="control">Element to position and scale
+            <select id="movePart"><option value="time">Time</option><option value="date">Date</option><option value="steps">Steps</option><option value="heart">Heart rate</option><option value="battery">Battery</option></select>
+          </label>
+          <label class="control">X position
             <input id="partX" type="number" min="0" max="240" step="1">
           </label>
-          <label class="control">Y-positie
+          <label class="control">Y position
             <input id="partY" type="number" min="0" max="280" step="1">
+          </label>
+          <label class="control">Scale (%)
+            <input id="partScale" type="number" min="50" max="150" step="5" value="100">
           </label>
         </div>
         <div class="checks">
-          <label><input id="transparentParts" type="checkbox"> transparante onderdelen</label>
-          <label><input id="showDate" type="checkbox" checked> datum</label>
-          <label><input id="showSteps" type="checkbox" checked> stappen</label>
-          <label><input id="showHeart" type="checkbox" checked> hartslag</label>
-          <label><input id="showBattery" type="checkbox" checked> batterij</label>
+          <label><input id="transparentParts" type="checkbox"> transparent elements</label>
+          <label><input id="showDate" type="checkbox" checked> date</label>
+          <label><input id="showSteps" type="checkbox" checked> steps</label>
+          <label><input id="showHeart" type="checkbox" checked> heart rate</label>
+          <label><input id="showBattery" type="checkbox" checked> battery</label>
         </div>
         <div class="actions">
-          <button id="buildFace">Watchface maken</button>
-          <button id="downloadBuiltFace" class="secondary" disabled>.bin downloaden</button>
+          <button id="buildFace">Build watch face</button>
+          <button id="downloadBuiltFace" class="secondary" disabled>Download .bin</button>
         </div>
-        <p id="builderInfo" class="muted">Het voorbeeld toont testwaarden. Kies digitaal, binair met vier grotere bits onder 8–4–2–1, of analoog met een uur- en minuutwijzer.</p>
+        <p id="builderInfo" class="muted">The preview uses test values. Choose digital, binary with four bits under 8–4–2–1, or analogue with hour and minute hands. Select an element to move or scale it.</p>
       </div>
     </div>
     <div class="subpanel">
-      <p>Of kies een bestaand compatibel MoYoung/Da Fit-watchfacebestand:</p>
+      <p>Or choose an existing compatible MoYoung/Da Fit watch-face file:</p>
       <div class="sample-face">
-        <img src="assets/template34-3056-preview.png" alt="Voorbeeld van de officiële template-34-watchface Color impression" width="120" height="140">
+        <img src="assets/template34-3056-preview.png" alt="Preview of the official template-34 Color impression watch face" width="120" height="140">
         <div>
-          <strong>Officiële Type-B-testwatchface</strong>
-          <p class="note">Color impression (Da Fit-catalogus, face-id 3056, template 34). Gebruik deze eerst om de volledige installatieketen op de MOY-NBA5 te controleren.</p>
-          <button id="loadTypeB" class="secondary">Type-B-voorbeeld laden</button>
+          <strong>Official Type-B test watch face</strong>
+          <p class="note">Color impression (Da Fit catalogue, face ID 3056, template 34). Use this first to verify the complete installation path on the MOY-NBA5.</p>
+          <button id="loadTypeB" class="secondary">Load Type-B example</button>
         </div>
       </div>
     <div class="actions">
       <input id="faceFile" type="file" accept=".bin,application/octet-stream">
-      <button id="uploadFace" disabled>Watchface uploaden</button>
-      <label class="control" style="width:115px">Actieve index
+      <button id="uploadFace" disabled>Upload watch face</button>
+      <label class="control" style="width:115px">Active index
         <input id="faceIndex" type="number" min="1" max="6" step="1" value="6">
       </label>
-      <button id="activateCustomFace" class="secondary" disabled>Index activeren</button>
+      <button id="activateCustomFace" class="secondary" disabled>Activate index</button>
     </div>
     </div>
-    <p id="faceInfo" class="muted">Nog geen watchfacebestand gekozen.</p>
+    <p id="faceInfo" class="muted">No watch-face file selected.</p>
     <progress id="faceProgress" max="100" value="0" style="width:100%;height:18px"></progress>
-    <p id="faceUploadStatus" class="muted">Maak of kies eerst een watchface.</p>
-    <p class="note">De MOY-NBA5 begint met vijf watchfaces. Een geïnstalleerde custom Type-B-watchface wordt als zesde item toegevoegd en staat daarna op index 6. Zowel de meegeleverde officiële testwatchface als de eigen editor gebruiken Type B voor template 34.</p>
+    <p id="faceUploadStatus" class="muted">Build or choose a watch face first.</p>
+    <p class="note">The MOY-NBA5 starts with five watch faces. An installed custom Type-B watch face is added as the sixth item and then appears at index 6. Both the included official test face and this editor use Type B for template 34.</p>
   </section>
 
   <section class="panel" data-page="overview">
-    <h2>Actuele metingen</h2>
-    <p class="note">Draag het horloge strak maar comfortabel, houd je arm stil en wacht op het resultaat. Een meting stopt automatisch na maximaal 45 seconden.</p>
-    <div id="vitals" class="grid"><div class="empty">Nog geen actuele meting uitgevoerd.</div></div>
+    <h2>Current measurements</h2>
+    <p class="note">Wear the watch snugly but comfortably, keep your arm still and wait for the result. A measurement stops automatically after no more than 45 seconds.</p>
+    <div id="vitals" class="grid"><div class="empty">No current measurement has been taken.</div></div>
   </section>
 
   <section class="panel" data-page="overview">
-    <h2>Activiteit</h2>
-    <div id="activity" class="grid"><div class="empty">Nog geen gegevens uitgelezen.</div></div>
+    <h2>Activity</h2>
+    <div id="activity" class="grid"><div class="empty">No data has been read.</div></div>
   </section>
 
   <section class="panel" data-page="overview">
-    <h2>Slaap</h2>
+    <h2>Sleep</h2>
     <div class="legend">
-      <span><i class="dot stage-0"></i>Wakker</span><span><i class="dot stage-1"></i>Licht</span>
-      <span><i class="dot stage-2"></i>Diep</span><span><i class="dot stage-3"></i>REM</span>
+      <span><i class="dot stage-0"></i>Awake</span><span><i class="dot stage-1"></i>Light</span>
+      <span><i class="dot stage-2"></i>Deep</span><span><i class="dot stage-3"></i>REM</span>
     </div>
-    <div id="sleep"><div class="empty">Nog geen gegevens uitgelezen.</div></div>
+    <div id="sleep"><div class="empty">No data has been read.</div></div>
   </section>
 
   <section class="panel" data-page="overview">
-    <h2>Hartslaggeschiedenis</h2>
-    <div id="heart"><div class="empty">Nog geen opgeslagen metingen ontvangen.</div></div>
-    <p class="note">Consumentensensor: alleen voor welzijn en trends, niet voor medische beslissingen.</p>
+    <h2>Heart-rate history</h2>
+    <div id="heart"><div class="empty">No stored measurements received.</div></div>
+    <p class="note">Consumer sensor: intended for wellbeing and trends only, not for medical decisions.</p>
   </section>
 
   <section class="panel" data-page="more">
-    <div class="page-intro"><h2>Meer</h2><p class="muted">Exporteer je lokale gegevens of bekijk technische informatie.</p></div>
+    <div class="page-intro"><h2>More</h2><p class="muted">Export your local data or view technical information.</p></div>
     <div class="actions">
-      <button id="exportCsv" class="secondary" disabled>CSV exporteren</button>
-      <button id="exportJson" class="secondary" disabled>JSON exporteren</button>
+      <button id="exportCsv" class="secondary" disabled>Export CSV</button>
+      <button id="exportJson" class="secondary" disabled>Export JSON</button>
     </div>
-    <p class="note">Gezondheidsgegevens blijven alleen in deze browserpagina totdat je ze exporteert of de pagina sluit.</p>
+    <p class="note">Health data remains in this browser page only until you export it or close the page.</p>
   </section>
 
   <details class="panel" data-page="more">
-    <summary>Technisch logboek</summary>
+    <summary>Technical log</summary>
     <pre id="log"></pre>
   </details>
-  <p class="note" data-page="more">Een watchface-upload schrijft alleen naar het custom-face-slot en verandert de firmware niet.</p>
+  <p class="note" data-page="more">A watch-face upload writes only to the custom-face slot and does not modify the firmware.</p>
 </main>
-<nav class="bottom-nav" aria-label="Hoofdnavigatie">
-  <button class="nav-button active" type="button" data-target="overview" aria-current="page"><span class="nav-icon">●</span><span>Vandaag</span></button>
-  <button class="nav-button" type="button" data-target="device"><span class="nav-icon">⌚</span><span>Horloge</span></button>
-  <button class="nav-button" type="button" data-target="faces"><span class="nav-icon">▣</span><span>Wijzerplaat</span></button>
-  <button class="nav-button" type="button" data-target="more"><span class="nav-icon">•••</span><span>Meer</span></button>
+<nav class="bottom-nav" aria-label="Main navigation">
+  <button class="nav-button active" type="button" data-target="overview" aria-current="page"><span class="nav-icon">●</span><span>Today</span></button>
+  <button class="nav-button" type="button" data-target="device"><span class="nav-icon">⌚</span><span>Watch</span></button>
+  <button class="nav-button" type="button" data-target="faces"><span class="nav-icon">▣</span><span>Watch face</span></button>
+  <button class="nav-button" type="button" data-target="more"><span class="nav-icon">•••</span><span>More</span></button>
 </nav>
-<script type="module" src="./health-viewer.js?v=20260924-20"></script>
+<script type="module" src="./health-viewer.js?v=20260924-26"></script>
 </body>
 </html>

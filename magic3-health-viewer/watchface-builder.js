@@ -7,6 +7,16 @@ const MAX_BLOBS = 250;
 const TYPE_B_BLOCK_SIZE = 1024;
 const TYPE_B_PAYLOAD_SIZE = 300 * 1024;
 
+function deduplicateBlobs(blobs) {
+  const offsets=new Uint32Array(blobs.length),unique=[],seen=new Map();let payloadLength=0;
+  for(let index=0;index<blobs.length;index++){
+    const blob=blobs[index],match=seen.get(blob);
+    if(match!==undefined)offsets[index]=match;
+    else{offsets[index]=payloadLength;unique.push({blob,offset:payloadLength});seen.set(blob,payloadLength);payloadLength+=blob.length;}
+  }
+  return {offsets,unique,payloadLength};
+}
+
 // Clean-room LZO1X-1 compressor, adapted from lzo1x 1.0.1 (MIT).
 // Type-B faces use the same raw LZO stream as Da Fit's MiniLzoHelper.
 const LZO_HASH_BITS=13,LZO_HASH_SIZE=1<<LZO_HASH_BITS,LZO_HASH_MASK=LZO_HASH_SIZE-1;
@@ -40,7 +50,7 @@ function lzo1xCompress(input){
 
 export function rgbaToRgb565(imageData) {
   const source=imageData.data??imageData;
-  if(source.length%4!==0)throw new Error("Ongeldige RGBA-afbeelding.");
+  if(source.length%4!==0)throw new Error("Invalid RGBA image.");
   const result=new Uint8Array(source.length/2);
   for(let sourceOffset=0,targetOffset=0;sourceOffset<source.length;sourceOffset+=4,targetOffset+=2){
     const red=source[sourceOffset],green=source[sourceOffset+1],blue=source[sourceOffset+2];
@@ -51,7 +61,7 @@ export function rgbaToRgb565(imageData) {
 }
 
 export function compressRleLine(raw,width,height) {
-  if(!(raw instanceof Uint8Array)||raw.length!==width*height*2)throw new Error("Ongeldige RGB565-afbeelding voor RLE-compressie.");
+  if(!(raw instanceof Uint8Array)||raw.length!==width*height*2)throw new Error("Invalid RGB565 image for RLE compression.");
   const headerSize=2+height*2,output=[];for(let i=0;i<headerSize;i++)output.push(0);output[0]=0x08;output[1]=0x21;
   for(let y=0;y<height;y++){
     let rowOffset=y*width*2,runHigh=raw[rowOffset],runLow=raw[rowOffset+1],runLength=1;
@@ -68,9 +78,9 @@ export function compressRleLine(raw,width,height) {
 }
 
 export function buildTypeCFace({entries,blobs,faceNumber=51001,fileId=0x81}) {
-  if(!Array.isArray(entries)||entries.length<1||entries.length>MAX_ENTRIES)throw new Error(`Een Type-C-watchface moet 1-${MAX_ENTRIES} velden hebben.`);
-  if(!Array.isArray(blobs)||blobs.length<1||blobs.length>MAX_BLOBS)throw new Error(`Een Type-C-watchface moet 1-${MAX_BLOBS} afbeeldingen hebben.`);
-  if(![0x81,0x84].includes(fileId))throw new Error("Alleen MoYoung Type-C fileID 0x81 of 0x84 wordt ondersteund.");
+  if(!Array.isArray(entries)||entries.length<1||entries.length>MAX_ENTRIES)throw new Error(`A Type-C watch face must have 1-${MAX_ENTRIES} fields.`);
+  if(!Array.isArray(blobs)||blobs.length<1||blobs.length>MAX_BLOBS)throw new Error(`A Type-C watch face must have 1-${MAX_BLOBS} images.`);
+  if(![0x81,0x84].includes(fileId))throw new Error("Only MoYoung Type-C file ID 0x81 or 0x84 is supported.");
   const normalized=blobs.map(blob=>blob instanceof Uint8Array?blob:new Uint8Array(blob));
   const payloadSize=normalized.reduce((total,blob)=>total+blob.length,0);
   const result=new Uint8Array(HEADER_SIZE+payloadSize),view=new DataView(result.buffer);
@@ -91,17 +101,18 @@ export function buildTypeCFace({entries,blobs,faceNumber=51001,fileId=0x81}) {
 }
 
 export function buildTypeBFace({entries,blobs,faceNumber=51001,fileId=0x81}) {
-  if(!Array.isArray(entries)||entries.length<1||entries.length>MAX_ENTRIES)throw new Error(`Een Type-B-watchface moet 1-${MAX_ENTRIES} velden hebben.`);
-  if(!Array.isArray(blobs)||blobs.length<1||blobs.length>MAX_BLOBS)throw new Error(`Een Type-B-watchface moet 1-${MAX_BLOBS} afbeeldingen hebben.`);
-  if(![0x81,0x84].includes(fileId))throw new Error("Alleen MoYoung Type-B fileID 0x81 of 0x84 wordt ondersteund.");
+  if(!Array.isArray(entries)||entries.length<1||entries.length>MAX_ENTRIES)throw new Error(`A Type-B watch face must have 1-${MAX_ENTRIES} fields.`);
+  if(!Array.isArray(blobs)||blobs.length<1||blobs.length>MAX_BLOBS)throw new Error(`A Type-B watch face must have 1-${MAX_BLOBS} images.`);
+  if(![0x81,0x84].includes(fileId))throw new Error("Only MoYoung Type-B file ID 0x81 or 0x84 is supported.");
   const normalized=blobs.map(blob=>blob instanceof Uint8Array?blob:new Uint8Array(blob));
-  const payloadLength=normalized.reduce((total,blob)=>total+blob.length,0);
-  if(payloadLength>TYPE_B_PAYLOAD_SIZE)throw new Error(`De uitgepakte Type-B-afbeeldingen zijn ${(payloadLength/1024).toFixed(1)} KiB; template 34 biedt maximaal 300 KiB.`);
+  const {offsets,unique,payloadLength}=deduplicateBlobs(normalized);
+  if(payloadLength>TYPE_B_PAYLOAD_SIZE)throw new Error(`The unpacked Type-B images use ${(payloadLength/1024).toFixed(1)} KiB; template 34 provides at most 300 KiB.`);
   const header=new Uint8Array(HEADER_SIZE),headerView=new DataView(header.buffer);
   header[0]=fileId;header[1]=entries.length;header[2]=normalized.length;headerView.setUint16(3,faceNumber,true);
   entries.forEach((entry,index)=>{const offset=5+index*10;header[offset]=entry.type;header[offset+1]=entry.imageIndex;headerView.setUint16(offset+2,entry.x,true);headerView.setUint16(offset+4,entry.y,true);headerView.setUint16(offset+6,entry.width,true);headerView.setUint16(offset+8,entry.height,true);});
-  const rawPayload=new Uint8Array(TYPE_B_PAYLOAD_SIZE);let rawOffset=0;
-  normalized.forEach((blob,index)=>{headerView.setUint32(400+index*4,rawOffset,true);headerView.setUint16(1400+index*2,blob.length&0xffff,true);rawPayload.set(blob,rawOffset);rawOffset+=blob.length;});
+  const rawPayload=new Uint8Array(TYPE_B_PAYLOAD_SIZE);
+  normalized.forEach((blob,index)=>{headerView.setUint32(400+index*4,offsets[index],true);headerView.setUint16(1400+index*2,blob.length&0xffff,true);});
+  unique.forEach(({blob,offset})=>rawPayload.set(blob,offset));
   const frames=[];let compressedLength=0;
   for(let offset=0;offset<rawPayload.length;offset+=TYPE_B_BLOCK_SIZE){
     const raw=rawPayload.subarray(offset,offset+TYPE_B_BLOCK_SIZE),compressed=lzo1xCompress(raw);
