@@ -1,6 +1,6 @@
 import {buildTypeBFace,rgbaToRgb565} from "./watchface-builder.js?v=20260923-13";
 
-const APP_VERSION = "2026.09.23-15";
+const APP_VERSION = "2026.09.24-17";
 
 const UUID = {
   service: "0000feea-0000-1000-8000-00805f9b34fb",
@@ -294,7 +294,8 @@ function drawCover(context,image,width,height) {
 function faceOptions() {
   return {title:el.faceTitle.value.trim()||"MAGIC 3",accent:el.faceAccent.value,background:el.faceBackgroundColor.value,clockStyle:el.clockStyle.value,transparent:el.transparentParts.checked,date:el.showDate.checked,steps:el.showSteps.checked,heart:el.showHeart.checked,battery:el.showBattery.checked};
 }
-function timeDigitPositions(style="digital"){const p=editorParts.time;return style==="binary"?[[p.x+77,p.y+17],[p.x+77,p.y+35],[p.x+77,p.y+53],[p.x+77,p.y+71]]:[[p.x+12,p.y+14],[p.x+54,p.y+14],[p.x+120,p.y+14],[p.x+162,p.y+14]];}
+function timeDigitPositions(style="digital"){const p=editorParts.time;return style==="binary"?[[p.x+39,p.y+18],[p.x+39,p.y+36],[p.x+39,p.y+54],[p.x+39,p.y+72]]:[[p.x+12,p.y+14],[p.x+54,p.y+14],[p.x+120,p.y+14],[p.x+162,p.y+14]];}
+function analogGeometry(){const p=editorParts.time;return {cx:p.x+p.width/2,cy:p.y+p.height/2,radius:34};}
 function fieldPositions(){return {day:[editorParts.date.x+8,editorParts.date.y+15],month:[editorParts.date.x+48,editorParts.date.y+15],steps:[editorParts.steps.x+60,editorParts.steps.y+8],heart:[editorParts.heart.x+60,editorParts.heart.y+4],battery:[editorParts.battery.x+21,editorParts.battery.y+15]};}
 function drawFaceBase(context,options) {
   context.clearRect(0,0,240,280);
@@ -304,7 +305,8 @@ function drawFaceBase(context,options) {
   const time=editorParts.time,date=editorParts.date,battery=editorParts.battery,steps=editorParts.steps,heart=editorParts.heart;
   if(!options.transparent)roundedRect(context,time.x,time.y,time.width,time.height,14,FACE_LAYOUT.panel);
   if(options.clockStyle==="digital"){context.fillStyle=options.accent;context.font="700 42px Arial,sans-serif";context.textAlign="center";context.fillText(":",time.x+108,time.y+45);context.textAlign="left";}
-  else {context.fillStyle=options.accent;context.font="700 8px Arial,sans-serif";context.textAlign="center";["16","8","4","2","1"].forEach((label,index)=>context.fillText(label,time.x+60+index*32,time.y+9));context.textAlign="left";context.font="700 8px Arial,sans-serif";["H1","H2","M1","M2"].forEach((label,index)=>context.fillText(label,time.x+8,time.y+25+index*18));context.save();context.strokeStyle=options.accent;context.lineWidth=2;context.globalAlpha=.38;for(let row=0;row<4;row++){context.beginPath();context.arc(time.x+60,time.y+25+row*18,5.5,0,Math.PI*2);context.stroke();}context.restore();}
+  else if(options.clockStyle==="binary"){context.fillStyle=options.accent;context.font="700 10px Arial,sans-serif";context.textAlign="center";["8","4","2","1"].forEach((label,index)=>context.fillText(label,time.x+48+index*40,time.y+9));context.textAlign="left";}
+  else {const {cx,cy,radius}=analogGeometry();context.save();context.strokeStyle=options.accent;context.lineCap="round";for(let mark=0;mark<12;mark++){const angle=mark*Math.PI/6-Math.PI/2,outer=radius,inner=radius-(mark%3===0?6:3);context.globalAlpha=mark%3===0?.9:.5;context.lineWidth=mark%3===0?2:1;context.beginPath();context.moveTo(cx+Math.cos(angle)*inner,cy+Math.sin(angle)*inner);context.lineTo(cx+Math.cos(angle)*outer,cy+Math.sin(angle)*outer);context.stroke();}context.restore();}
   context.font="700 8px Arial,sans-serif";
   if(options.date){if(!options.transparent)roundedRect(context,date.x,date.y,date.width,date.height,9,FACE_LAYOUT.panel);context.fillStyle=options.accent;context.fillText("DATUM",date.x+7,date.y+9);context.font="700 16px Arial,sans-serif";context.fillText("/",date.x+39,date.y+27);}
   if(options.battery){if(!options.transparent)roundedRect(context,battery.x,battery.y,battery.width,battery.height,9,FACE_LAYOUT.panel);context.fillStyle=options.accent;context.font="700 8px Arial,sans-serif";context.fillText("BAT",battery.x+7,battery.y+9);context.fillText("%",battery.x+54,battery.y+28);}
@@ -313,7 +315,8 @@ function drawFaceBase(context,options) {
 }
 function drawExampleDigits(context,options) {
   context.textAlign="center";context.textBaseline="middle";context.fillStyle=options.accent;context.font="700 54px Arial,sans-serif";
-  [1,0,0,9].forEach((digit,index)=>{const [x,y]=timeDigitPositions(options.clockStyle)[index];drawTimeGlyph(context,digit,x,y,options.accent,options.clockStyle);});
+  if(options.clockStyle==="analog")drawAnalogHands(context,10,9,options.accent);
+  else [1,0,0,9].forEach((digit,index)=>{const [x,y]=timeDigitPositions(options.clockStyle)[index];drawTimeGlyph(context,digit,x,y,options.accent,options.clockStyle);});
   context.font="700 18px Arial,sans-serif";
   const draw=(text,x,y)=>[...text].forEach((digit,index)=>context.fillText(digit,x+index*14+7,y+11));
   const positions=fieldPositions();
@@ -322,6 +325,10 @@ function drawExampleDigits(context,options) {
   if(options.steps)draw("8240",...positions.steps);
   if(options.heart)draw("68",...positions.heart);
   context.textAlign="left";
+}
+function drawAnalogHands(context,hour,minute,foreground) {
+  const {cx,cy}=analogGeometry(),drawHand=(angle,length,width)=>{context.save();context.translate(cx,cy);context.rotate(angle);context.strokeStyle=foreground;context.lineWidth=width;context.lineCap="round";context.beginPath();context.moveTo(0,3);context.lineTo(0,-length);context.stroke();context.restore();};
+  drawHand((hour%12+minute/60)*Math.PI/6,25,5);drawHand(minute*Math.PI/30,36,3);context.fillStyle=foreground;context.beginPath();context.arc(cx,cy,5,0,Math.PI*2);context.fill();
 }
 function renderFacePreview() {
   const context=el.facePreview.getContext("2d",{alpha:false}),options=faceOptions();drawFaceBase(context,options);drawExampleDigits(context,options);
@@ -334,7 +341,7 @@ function canvasRgb565(canvas) {
 function drawTimeGlyph(context,digit,x,y,foreground,style) {
   if(style!=="binary"){context.fillStyle=foreground;context.font="700 54px Arial,sans-serif";context.textAlign="center";context.textBaseline="middle";context.fillText(String(digit),x+21,y+32);return;}
   context.save();context.strokeStyle=foreground;context.fillStyle=foreground;context.lineWidth=2;
-  [8,4,2,1].forEach((value,column)=>{context.beginPath();context.arc(x+15+column*32,y+8,5.5,0,Math.PI*2);if(digit&value)context.fill();else{context.globalAlpha=.38;context.stroke();context.globalAlpha=1;}});context.restore();
+  [8,4,2,1].forEach((value,column)=>{context.beginPath();context.arc(x+9+column*40,y+9,7.5,0,Math.PI*2);if(digit&value)context.fill();else{context.globalAlpha=.38;context.stroke();context.globalAlpha=1;}});context.restore();
 }
 function digitBlobs(width,height,font,foreground,backgroundCanvas=null,x=0,y=0,style="digital") {
   const blobs=[];
@@ -349,13 +356,19 @@ function digitBlobs(width,height,font,foreground,backgroundCanvas=null,x=0,y=0,s
 function binaryBitBlobs(bitValue,foreground,backgroundCanvas,x,y) {
   const blobs=[];
   for(let digit=0;digit<=9;digit++){
-    const canvas=document.createElement("canvas");canvas.width=14;canvas.height=16;const context=canvas.getContext("2d",{alpha:false});
-    if(backgroundCanvas)context.drawImage(backgroundCanvas,x,y,14,16,0,0,14,16);else{context.fillStyle=FACE_LAYOUT.panel;context.fillRect(0,0,14,16);}
-    context.save();context.strokeStyle=foreground;context.fillStyle=foreground;context.lineWidth=2;context.beginPath();context.arc(7,8,5.5,0,Math.PI*2);
+    const canvas=document.createElement("canvas");canvas.width=18;canvas.height=18;const context=canvas.getContext("2d",{alpha:false});
+    if(backgroundCanvas)context.drawImage(backgroundCanvas,x,y,18,18,0,0,18,18);else{context.fillStyle=FACE_LAYOUT.panel;context.fillRect(0,0,18,18);}
+    context.save();context.strokeStyle=foreground;context.fillStyle=foreground;context.lineWidth=2;context.beginPath();context.arc(9,9,7.5,0,Math.PI*2);
     if(digit&bitValue)context.fill();else{context.globalAlpha=.38;context.stroke();}
     context.restore();blobs.push(canvasRgb565(canvas));
   }
   return blobs;
+}
+function analogHandBlob(width,height,foreground,lineWidth) {
+  const canvas=document.createElement("canvas");canvas.width=width;canvas.height=height;const context=canvas.getContext("2d",{alpha:false});context.fillStyle="#000";context.fillRect(0,0,width,height);context.strokeStyle=foreground;context.lineWidth=lineWidth;context.lineCap="round";context.beginPath();context.moveTo(width/2,height-1);context.lineTo(width/2,3);context.stroke();return canvasRgb565(canvas);
+}
+function analogPinBlob(foreground) {
+  const canvas=document.createElement("canvas");canvas.width=12;canvas.height=12;const context=canvas.getContext("2d",{alpha:false});context.fillStyle="#000";context.fillRect(0,0,12,12);context.fillStyle=foreground;context.beginPath();context.arc(6,6,5,0,Math.PI*2);context.fill();return canvasRgb565(canvas);
 }
 function makeWatchFace() {
   const options=faceOptions(),base=document.createElement("canvas");base.width=240;base.height=280;const baseContext=base.getContext("2d",{alpha:false});drawFaceBase(baseContext,options);
@@ -367,11 +380,15 @@ function makeWatchFace() {
   if(options.clockStyle==="binary"){
     timeDigitPositions("binary").forEach(([rowX,rowY],row)=>{
       [8,4,2,1].forEach((bitValue,column)=>{
-        const x=rowX+8+column*32,y=rowY,imageIndex=blobs.length;
+        const x=rowX+column*40,y=rowY,imageIndex=blobs.length;
         blobs.push(...binaryBitBlobs(bitValue,options.accent,options.transparent?base:null,x,y));
-        entries.push({type:[0x40,0x41,0x43,0x44][row],imageIndex,x,y,width:14,height:16});
+        entries.push({type:[0x40,0x41,0x43,0x44][row],imageIndex,x,y,width:18,height:18});
       });
     });
+  }else if(options.clockStyle==="analog"){
+    const {cx,cy}=analogGeometry(),hourIndex=blobs.length;blobs.push(analogHandBlob(14,30,options.accent,5));entries.push({type:0xf1,imageIndex:hourIndex,x:cx-7,y:cy-30,width:14,height:30});
+    const minuteIndex=blobs.length;blobs.push(analogHandBlob(10,40,options.accent,3));entries.push({type:0xf2,imageIndex:minuteIndex,x:cx-5,y:cy-40,width:10,height:40});
+    const pinIndex=blobs.length;blobs.push(analogPinBlob(options.accent));entries.push({type:0xf4,imageIndex:pinIndex,x:cx-6,y:cy-6,width:12,height:12});
   }else{
     timeDigitPositions("digital").forEach(([x,y],index)=>{const imageIndex=sharedBig??=addDigitSet(42,64,"700 54px Arial,sans-serif",x,y);entries.push({type:[0x40,0x41,0x43,0x44][index],imageIndex,x,y,width:42,height:64});});
   }
@@ -384,7 +401,8 @@ function makeWatchFace() {
   const faceNumber=50000+(Date.now()%10000),bytes=buildTypeBFace({entries,blobs,faceNumber}),name=`magic3-eigen-${faceNumber}.bin`,meta=inspectFace(bytes);
   generatedFace={name,bytes};selectedFace={file:{name,size:bytes.length},bytes,meta};el.faceProgress.value=0;el.downloadBuiltFace.disabled=false;
   el.faceInfo.className=bytes.length<=MAX_SAFE_FACE_SIZE?"ok":"bad";el.faceInfo.textContent=`${name} · ${(bytes.length/1024).toLocaleString("nl-NL",{maximumFractionDigits:1})} kB · Type B/0x81 · template 34 · ${meta.dataCount} velden${bytes.length>MAX_SAFE_FACE_SIZE?" · te groot voor veilige MOY-NBA5-upload":""}`;
-  el.builderInfo.className="ok";el.builderInfo.textContent=`${options.clockStyle==="binary"?"Binaire BCD-watchface":"Watchface"} gebouwd en geselecteerd${options.transparent?" met ingebrande achtergrond achter de cijfers":""}. Je kunt hem downloaden of direct uploaden.`;
+  const styleName=options.clockStyle==="binary"?"Binaire BCD-watchface":options.clockStyle==="analog"?"Analoge watchface":"Watchface";
+  el.builderInfo.className="ok";el.builderInfo.textContent=`${styleName} gebouwd en geselecteerd${options.transparent&&options.clockStyle!=="analog"?" met ingebrande achtergrond achter de cijfers":""}. Je kunt hem downloaden of direct uploaden.`;
   log(`Eigen watchface gebouwd: ${name}, ${bytes.length} bytes, ${entries.length} velden en ${blobs.length} afbeeldingen.`);setConnectedControls(Boolean(conn.device?.gatt?.connected));
 }
 function syncPositionControls(){const part=editorParts[el.movePart.value];el.partX.value=part.x;el.partY.value=part.y;renderFacePreview();}

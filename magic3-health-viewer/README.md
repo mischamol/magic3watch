@@ -30,7 +30,7 @@ Daarnaast staat in de pagina een eenvoudige watchface-maker voor het 240×280-sc
 
 1. Kies een titel, kleuren en eventueel een eigen JPG-, PNG- of WebP-achtergrond.
 2. Kies welke velden je wilt tonen: datum, stappen, hartslag en batterij.
-3. Kies een gewone digitale klok of een horizontale binaire BCD-klok. De vier rijen zijn `H1`, `H2`, `M1` en `M2`; de kolommen hebben van links naar rechts de waarden 16, 8, 4, 2 en 1. Een gevulde stip betekent dat de bit actief is. Omdat elk BCD-veld één decimaal cijfer van 0–9 bevat, blijft de kolom 16 uit.
+3. Kies een gewone digitale klok, een horizontale binaire BCD-klok of een analoge klok. De vier binaire regels vormen achtereenvolgens de twee uur- en twee minuutcijfers; de grotere bits staan van links naar rechts onder 8, 4, 2 en 1. De analoge modus gebruikt de native MoYoung-velden `HAND_HOUR` en `HAND_MINUTE`, zodat het horloge de wijzers zelf draait.
 4. Verplaats tijd, datum, stappen, hartslag of batterij door het onderdeel in het horlogevoorbeeld te slepen. Voor precieze plaatsing kun je de X- en Y-positie invoeren.
 5. Schakel eventueel **transparante onderdelen** in. De gekleurde panelen verdwijnen en de maker bakt de onderliggende achtergrondpixels in de dynamische cijferafbeeldingen.
 6. Klik **Watchface maken**. De browser bouwt lokaal een compleet `.bin`-bestand en selecteert dit voor upload.
@@ -54,7 +54,7 @@ De actuele uploader volgt de CRP-overdracht uit de statisch onderzochte Da Fit-S
 
 Herhaalde verzoeken voor hetzelfde blok worden samengevoegd, maar verschillende blokverzoeken blijven in de ontvangen volgorde staan. Net als Da Fit gebruikt de uploader bij CRP-protocol V2 bevestigde GATT-schrijfacties als FEE6 die ondersteunt. De CRP-frames worden na MTU-onderhandeling in stukken van 244 bytes geschreven; als de Windows Bluetooth-stack die grootte afwijst, schakelt de uploader automatisch terug naar 20 bytes.
 
-Bij de horizontale BCD-klok is de altijd-uitgeschakelde 16-stip statisch in de achtergrond opgenomen. Alleen de dynamische bits 8, 4, 2 en 1 worden per cijfer opgeslagen. Daardoor blijft ook een transparante klok met fotoachtergrond aanzienlijk kleiner.
+Bij de horizontale BCD-klok is de ongebruikte 16-kolom volledig verwijderd. Alleen de dynamische bits 8, 4, 2 en 1 worden per cijfer opgeslagen. Hun compacte uitsnedes houden ook een transparante klok met fotoachtergrond binnen de beschikbare beeldruimte.
 
 Bij een actuele hartslag- of bloeddrukmeting wordt de optische sensor tijdelijk gestart en daarna altijd gestopt, ook bij een time-out. Gezondheidsdata blijft lokaal in de geopende pagina en wordt alleen als bestand opgeslagen wanneer je zelf op exporteren klikt.
 

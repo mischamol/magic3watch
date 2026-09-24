@@ -83,7 +83,7 @@
             <input id="faceBackgroundFile" type="file" accept="image/png,image/jpeg,image/webp">
           </label>
           <label class="control">Tijdweergave
-            <select id="clockStyle"><option value="digital">Digitale klok</option><option value="binary">Binaire BCD-klok (horizontaal)</option></select>
+            <select id="clockStyle"><option value="digital">Digitale klok</option><option value="binary">Binaire BCD-klok (horizontaal)</option><option value="analog">Analoge klok</option></select>
           </label>
           <label class="control">Onderdeel verplaatsen
             <select id="movePart"><option value="time">Tijd</option><option value="date">Datum</option><option value="steps">Stappen</option><option value="heart">Hartslag</option><option value="battery">Batterij</option></select>
@@ -106,7 +106,7 @@
           <button id="buildFace">Watchface maken</button>
           <button id="downloadBuiltFace" class="secondary" disabled>.bin downloaden</button>
         </div>
-        <p id="builderInfo" class="muted">Het voorbeeld toont testwaarden. De binaire klok heeft rijen voor H1, H2, M1 en M2, met horizontale bits onder 16, 8, 4, 2 en 1.</p>
+        <p id="builderInfo" class="muted">Het voorbeeld toont testwaarden. Kies digitaal, binair met vier grotere bits onder 8–4–2–1, of analoog met een uur- en minuutwijzer.</p>
       </div>
     </div>
     <div class="subpanel">
@@ -166,6 +166,6 @@
   </details>
   <p class="note">Gezondheidsgegevens blijven in deze browserpagina tot je exporteert of de pagina sluit. Een watchface-upload schrijft alleen naar het daarvoor bedoelde custom-face-slot en verandert de firmware niet.</p>
 </main>
-<script type="module" src="./health-viewer.js?v=20260923-15"></script>
+<script type="module" src="./health-viewer.js?v=20260924-17"></script>
 </body>
 </html>
