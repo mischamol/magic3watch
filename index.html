@@ -182,7 +182,7 @@
             <select id="clockStyle"><option value="digital">Digital clock</option><option value="binary">Binary BCD clock (horizontal)</option><option value="analog">Analogue clock</option></select>
           </label>
           <label class="control">Element to position and scale
-            <select id="movePart"><option value="time">Time</option><option value="date">Date</option><option value="steps">Steps</option><option value="heart">Heart rate</option><option value="battery">Battery</option></select>
+            <select id="movePart"><option value="time">Time</option><option value="date">Date</option><option value="steps">Steps</option><option value="distance">Distance</option><option value="heart">Heart rate</option><option value="battery">Battery</option></select>
           </label>
           <label class="control">X position
             <input id="partX" type="number" min="0" max="240" step="1">
@@ -198,6 +198,7 @@
           <label><input id="transparentParts" type="checkbox"> transparent elements</label>
           <label><input id="showDate" type="checkbox" checked> date</label>
           <label><input id="showSteps" type="checkbox" checked> steps</label>
+          <label><input id="showDistance" type="checkbox" checked> distance</label>
           <label><input id="showHeart" type="checkbox" checked> heart rate</label>
           <label><input id="showBattery" type="checkbox" checked> battery</label>
         </div>
@@ -205,7 +206,7 @@
           <button id="buildFace">Build watch face</button>
           <button id="downloadBuiltFace" class="secondary" disabled>Download .bin</button>
         </div>
-        <p id="builderInfo" class="muted">The preview uses test values. Choose digital, binary with four bits under 8–4–2–1, or analogue with hour and minute hands. Select an element to move or scale it.</p>
+        <p id="builderInfo" class="muted">The preview uses test values. Choose digital, binary with four bits under 8–4–2–1, or analogue with hour and minute hands. Select an element to move or scale it. Distance includes a dedicated decimal-point sprite so the watch displays a point instead of borrowing an unrelated image.</p>
       </div>
     </div>
     <div class="subpanel">
@@ -280,6 +281,6 @@
   <button class="nav-button" type="button" data-target="faces"><span class="nav-icon">▣</span><span>Watch face</span></button>
   <button class="nav-button" type="button" data-target="more"><span class="nav-icon">•••</span><span>More</span></button>
 </nav>
-<script type="module" src="./health-viewer.js?v=20260924-26"></script>
+<script type="module" src="./health-viewer.js?v=20260925-32"></script>
 </body>
 </html>

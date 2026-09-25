@@ -1,6 +1,6 @@
 import {buildTypeBFace,rgbaToRgb565} from "./watchface-builder.js?v=20260924-26";
 
-const APP_VERSION = "2026.09.24-26";
+const APP_VERSION = "2026.09.25-32";
 
 const UUID = {
   service: "0000feea-0000-1000-8000-00805f9b34fb",
@@ -24,7 +24,7 @@ const CMD = {
   SET_MOVE_PERIOD:0x73,QUERY_MOVE_PERIOD:0x83,FIND_WATCH:0x61,
 };
 const ARG = { YESTERDAY_STEPS:1, EARLIER_STEPS:2, YESTERDAY_SLEEP:3, EARLIER_SLEEP:4 };
-const el = Object.fromEntries(["connect","chooseDevice","fetch","syncTime","measureHr","measureBp","exportCsv","exportJson","disconnect","state","vitals","activity","sleep","heart","log","faceFile","loadTypeB","uploadFace","activateCustomFace","faceIndex","faceInfo","faceProgress","faceUploadStatus","facePreview","faceTitle","faceAccent","faceBackgroundColor","faceBackgroundFile","backgroundOpacity","clockStyle","transparentParts","movePart","partX","partY","partScale","showDate","showSteps","showHeart","showBattery","buildFace","downloadBuiltFace","builderInfo","readSettings","findWatch","settingsStatus","settingGoal","settingTimeSystem","settingUnits","saveBasics","quickViewEnabled","quickStart","quickEnd","saveQuickView","dndEnabled","dndStart","dndEnd","saveDnd","moveEnabled","movePeriod","moveSteps","moveStart","moveEnd","saveMove","alarmSlot","alarmTime","alarmEnabled","alarmDays","alarmSummary","saveAlarm"].map(id => [id, document.getElementById(id)]));
+const el = Object.fromEntries(["connect","chooseDevice","fetch","syncTime","measureHr","measureBp","exportCsv","exportJson","disconnect","state","vitals","activity","sleep","heart","log","faceFile","loadTypeB","uploadFace","activateCustomFace","faceIndex","faceInfo","faceProgress","faceUploadStatus","facePreview","faceTitle","faceAccent","faceBackgroundColor","faceBackgroundFile","backgroundOpacity","clockStyle","transparentParts","movePart","partX","partY","partScale","showDate","showSteps","showDistance","showHeart","showBattery","buildFace","downloadBuiltFace","builderInfo","readSettings","findWatch","settingsStatus","settingGoal","settingTimeSystem","settingUnits","saveBasics","quickViewEnabled","quickStart","quickEnd","saveQuickView","dndEnabled","dndStart","dndEnd","saveDnd","moveEnabled","movePeriod","moveSteps","moveStart","moveEnd","saveMove","alarmSlot","alarmTime","alarmEnabled","alarmDays","alarmSummary","saveAlarm"].map(id => [id, document.getElementById(id)]));
 const settingButtons=[...document.querySelectorAll(".watch-setting-action")];
 const appRoot=document.querySelector("main"),navButtons=[...document.querySelectorAll(".nav-button")];
 const conn = { device:null, server:null, steps:null, out:null, input:null, faceData:null, frame:[], expected:0, waiters:[], faceTransfer:null, faceAbortError:null, battery:null, faceTemplate:null };
@@ -389,7 +389,8 @@ async function findWatch(){requireConnected();setBusy(true);try{await writeSetti
 const FACE_LAYOUT = {panel:"#0b1627",big:{width:42,height:64},small:{width:14,height:22}};
 const editorParts = {
   time:{x:12,y:36,width:216,height:92,scale:1},date:{x:12,y:142,width:94,height:41,scale:1},
-  steps:{x:12,y:191,width:142,height:38,scale:1},heart:{x:12,y:234,width:142,height:34,scale:1},battery:{x:164,y:142,width:64,height:41,scale:1},
+  steps:{x:12,y:191,width:104,height:38,scale:1},distance:{x:122,y:191,width:106,height:38,scale:1},
+  heart:{x:12,y:234,width:142,height:34,scale:1},battery:{x:164,y:142,width:64,height:41,scale:1},
 };
 let draggedPart=null,dragOffset={x:0,y:0};
 
@@ -413,7 +414,7 @@ function drawCover(context,image,width,height) {
   context.drawImage(image,(width-drawWidth)/2,(height-drawHeight)/2,drawWidth,drawHeight);
 }
 function faceOptions() {
-  return {title:el.faceTitle.value.trim()||"MAGIC 3",accent:el.faceAccent.value,background:el.faceBackgroundColor.value,imageOpacity:Math.max(0,Math.min(1,Number(el.backgroundOpacity.value)/100)),clockStyle:el.clockStyle.value,transparent:el.transparentParts.checked,date:el.showDate.checked,steps:el.showSteps.checked,heart:el.showHeart.checked,battery:el.showBattery.checked};
+  return {title:el.faceTitle.value.trim()||"MAGIC 3",accent:el.faceAccent.value,background:el.faceBackgroundColor.value,imageOpacity:Math.max(0,Math.min(1,Number(el.backgroundOpacity.value)/100)),clockStyle:el.clockStyle.value,transparent:el.transparentParts.checked,date:el.showDate.checked,steps:el.showSteps.checked,distance:el.showDistance.checked,heart:el.showHeart.checked,battery:el.showBattery.checked};
 }
 function timeDigitPositions(style="digital"){
   const p=editorParts.time,s=p.scale;
@@ -425,15 +426,15 @@ function timeDigitPositions(style="digital"){
 }
 function analogGeometry(){const p=editorParts.time,s=p.scale;return {cx:p.x+p.width*s/2,cy:p.y+p.height*s/2,radius:34*s};}
 function fieldPositions(){
-  const date=editorParts.date,steps=editorParts.steps,heart=editorParts.heart,battery=editorParts.battery;
-  return {day:[date.x+8*date.scale,date.y+15*date.scale,date.scale],month:[date.x+48*date.scale,date.y+15*date.scale,date.scale],steps:[steps.x+60*steps.scale,steps.y+8*steps.scale,steps.scale],heart:[heart.x+60*heart.scale,heart.y+4*heart.scale,heart.scale],battery:[battery.x+21*battery.scale,battery.y+15*battery.scale,battery.scale]};
+  const date=editorParts.date,steps=editorParts.steps,distance=editorParts.distance,heart=editorParts.heart,battery=editorParts.battery;
+  return {day:[date.x+8*date.scale,date.y+15*date.scale,date.scale],month:[date.x+48*date.scale,date.y+15*date.scale,date.scale],steps:[steps.x+43*steps.scale,steps.y+8*steps.scale,steps.scale],distance:[distance.x+36*distance.scale,distance.y+8*distance.scale,distance.scale],distanceUnit:[distance.x+83*distance.scale,distance.y+14*distance.scale,distance.scale],heart:[heart.x+60*heart.scale,heart.y+4*heart.scale,heart.scale],battery:[battery.x+21*battery.scale,battery.y+15*battery.scale,battery.scale]};
 }
 function drawFaceBase(context,options) {
   context.clearRect(0,0,240,280);
   const gradient=context.createLinearGradient(0,0,0,280);gradient.addColorStop(0,options.background);gradient.addColorStop(1,"#102d4d");context.fillStyle=gradient;context.fillRect(0,0,240,280);
   if(customFaceBackground&&options.imageOpacity>0){context.save();context.globalAlpha=options.imageOpacity;drawCover(context,customFaceBackground,240,280);context.fillStyle="rgba(0,0,0,.28)";context.fillRect(0,0,240,280);context.restore();}
   context.textBaseline="middle"; context.fillStyle=options.accent;context.font="700 12px Arial,sans-serif";context.fillText(options.title.slice(0,12).toUpperCase(),16,20);
-  const time=editorParts.time,date=editorParts.date,battery=editorParts.battery,steps=editorParts.steps,heart=editorParts.heart;
+  const time=editorParts.time,date=editorParts.date,battery=editorParts.battery,steps=editorParts.steps,distance=editorParts.distance,heart=editorParts.heart;
   if(options.clockStyle==="binary"){
     const bounds=partBounds("time");if(!options.transparent)roundedRect(context,time.x+32,bounds.y,152,bounds.height,12,FACE_LAYOUT.panel);
     context.fillStyle=options.accent;context.font=`700 ${Math.round(10*Math.min(time.scale,1.25))}px Arial,sans-serif`;context.textAlign="center";["8","4","2","1"].forEach((label,index)=>context.fillText(label,time.x+48+index*40,time.y+9));context.textAlign="left";
@@ -441,6 +442,7 @@ function drawFaceBase(context,options) {
   if(options.date)drawScaledPart(context,date,()=>{if(!options.transparent)roundedRect(context,0,0,date.width,date.height,9,FACE_LAYOUT.panel);context.fillStyle=options.accent;context.font="700 8px Arial,sans-serif";context.fillText("DATE",7,9);context.font="700 16px Arial,sans-serif";context.fillText("/",39,27);});
   if(options.battery)drawScaledPart(context,battery,()=>{if(!options.transparent)roundedRect(context,0,0,battery.width,battery.height,9,FACE_LAYOUT.panel);context.fillStyle=options.accent;context.font="700 8px Arial,sans-serif";context.fillText("BAT",7,9);context.fillText("%",54,28);});
   if(options.steps)drawScaledPart(context,steps,()=>{if(!options.transparent)roundedRect(context,0,0,steps.width,steps.height,9,FACE_LAYOUT.panel);context.fillStyle=options.accent;context.font="700 9px Arial,sans-serif";context.fillText("STEPS",8,19);});
+  if(options.distance)drawScaledPart(context,distance,()=>{if(!options.transparent)roundedRect(context,0,0,distance.width,distance.height,9,FACE_LAYOUT.panel);context.fillStyle=options.accent;context.font="700 8px Arial,sans-serif";context.fillText("DIST",7,9);});
   if(options.heart)drawScaledPart(context,heart,()=>{if(!options.transparent)roundedRect(context,0,0,heart.width,heart.height,9,FACE_LAYOUT.panel);context.fillStyle=options.accent;context.font="700 9px Arial,sans-serif";context.fillText("HEART",8,17);context.fillText("BPM",110,17);});
 }
 function drawExampleDigits(context,options) {
@@ -452,6 +454,7 @@ function drawExampleDigits(context,options) {
   if(options.date){draw("19",...positions.day);draw("09",...positions.month);}
   if(options.battery)draw("82",...positions.battery);
   if(options.steps)draw("8240",...positions.steps);
+  if(options.distance){const metric=el.settingUnits.value!=="1";draw(metric?"8.2":"5.1",...positions.distance);context.font=`700 ${Math.round(9*editorParts.distance.scale)}px Arial,sans-serif`;context.fillText(metric?"KM":"MI",positions.distanceUnit[0]+8*editorParts.distance.scale,positions.distanceUnit[1]+5*editorParts.distance.scale);}
   if(options.heart)draw("68",...positions.heart);
   context.textAlign="left";
 }
@@ -508,6 +511,16 @@ function analogHandBlob(width,height,foreground,lineWidth) {
 function analogPinBlob(foreground,size=12) {
   const canvas=document.createElement("canvas");canvas.width=size;canvas.height=size;const context=canvas.getContext("2d",{alpha:false});context.fillStyle="#000";context.fillRect(0,0,size,size);context.fillStyle=foreground;context.beginPath();context.arc(size/2,size/2,size*5/12,0,Math.PI*2);context.fill();return canvasRgb565(canvas);
 }
+function unitBlob(text,width,height,foreground,backgroundCanvas,x,y) {
+  const canvas=document.createElement("canvas");canvas.width=width;canvas.height=height;const context=canvas.getContext("2d",{alpha:false});
+  if(backgroundCanvas)context.drawImage(backgroundCanvas,x,y,width,height,0,0,width,height);else{context.fillStyle=FACE_LAYOUT.panel;context.fillRect(0,0,width,height);}
+  context.fillStyle=foreground;context.font=`700 ${Math.max(8,Math.round(height*.65))}px Arial,sans-serif`;context.textAlign="center";context.textBaseline="middle";context.fillText(text,width/2,height/2);return canvasRgb565(canvas);
+}
+function decimalPointBlob(width,height,foreground,backgroundCanvas,x,y) {
+  const canvas=document.createElement("canvas");canvas.width=width;canvas.height=height;const context=canvas.getContext("2d",{alpha:false});
+  if(backgroundCanvas)context.drawImage(backgroundCanvas,x,y,width,height,0,0,width,height);else{context.fillStyle=FACE_LAYOUT.panel;context.fillRect(0,0,width,height);}
+  const dotX=Math.max(1,Math.round(width/8)),dotY=Math.round(height*19/24),dotWidth=Math.max(3,Math.round(width*5/8)),dotHeight=Math.max(3,height-dotY);context.fillStyle=foreground;context.fillRect(dotX,dotY,dotWidth,dotHeight);return canvasRgb565(canvas);
+}
 function makeWatchFace() {
   clampEditorScales();syncPositionControls();
   const options=faceOptions(),base=document.createElement("canvas");base.width=240;base.height=280;const baseContext=base.getContext("2d",{alpha:false});drawFaceBase(baseContext,options);
@@ -535,6 +548,7 @@ function makeWatchFace() {
   const positions=fieldPositions(),smallIndex=(x,y,scale)=>{const width=Math.round(12*scale),height=Math.round(20*scale),key=`${width}x${height}`;let index=smallSets.get(key);if(index===undefined){index=addDigitSet(width,height,`700 ${Math.round(17*scale)}px Arial,sans-serif`,Math.round(x),Math.round(y));smallSets.set(key,index);}return {index,width,height,x:Math.round(x),y:Math.round(y)};};
   if(options.date){const day=smallIndex(...positions.day),month=smallIndex(...positions.month);entries.push({type:0x30,imageIndex:day.index,x:day.x,y:day.y,width:day.width,height:day.height},{type:0x11,imageIndex:month.index,x:month.x,y:month.y,width:month.width,height:month.height});}
   if(options.steps){const item=smallIndex(...positions.steps);entries.push({type:0x62,imageIndex:item.index,x:item.x,y:item.y,width:item.width,height:item.height});}
+  if(options.distance){const [distanceX,distanceY,distanceScale]=positions.distance,digitWidth=Math.max(2,Math.round(6*distanceScale)*2),digitHeight=Math.round(20*distanceScale),distanceIndex=blobs.length,roundedX=Math.round(distanceX),roundedY=Math.round(distanceY);blobs.push(...digitBlobs(digitWidth,digitHeight,`700 ${Math.round(17*distanceScale)}px Arial,sans-serif`,options.accent,options.transparent?base:null,roundedX,roundedY));const pointWidth=digitWidth/2;blobs.push(decimalPointBlob(pointWidth,digitHeight,options.accent,options.transparent?base:null,roundedX,roundedY));const unitScale=editorParts.distance.scale,unitWidth=Math.round(20*unitScale),unitHeight=Math.round(14*unitScale),unitX=Math.round(positions.distanceUnit[0]),unitY=Math.round(positions.distanceUnit[1]),kmIndex=blobs.length;blobs.push(unitBlob("KM",unitWidth,unitHeight,options.accent,options.transparent?base:null,unitX,unitY));const miIndex=blobs.length;blobs.push(unitBlob("MI",unitWidth,unitHeight,options.accent,options.transparent?base:null,unitX,unitY));entries.push({type:0xa2,imageIndex:distanceIndex,x:roundedX,y:roundedY,width:digitWidth,height:digitHeight},{type:0xa5,imageIndex:kmIndex,x:unitX,y:unitY,width:unitWidth,height:unitHeight},{type:0xa6,imageIndex:miIndex,x:unitX,y:unitY,width:unitWidth,height:unitHeight});}
   if(options.heart){const item=smallIndex(...positions.heart);entries.push({type:0x65,imageIndex:item.index,x:item.x,y:item.y,width:item.width,height:item.height});}
   if(options.battery){const item=smallIndex(...positions.battery);entries.push({type:0xd2,imageIndex:item.index,x:item.x,y:item.y,width:item.width,height:item.height});}
   blobs.push(canvasRgb565(thumbnail));
@@ -721,7 +735,8 @@ el.saveAlarm.addEventListener("click",()=>saveAlarm().catch(fail));
 el.buildFace.addEventListener("click",()=>{try{makeWatchFace();}catch(error){fail(error);}});
 el.downloadBuiltFace.addEventListener("click",()=>{if(generatedFace)download(generatedFace.name,"application/octet-stream",generatedFace.bytes);});
 el.faceBackgroundFile.addEventListener("change",()=>loadFaceBackground().catch(fail));
-for(const input of [el.faceTitle,el.faceAccent,el.faceBackgroundColor,el.backgroundOpacity,el.showDate,el.showSteps,el.showHeart,el.showBattery])input.addEventListener("input",editorChanged);
+for(const input of [el.faceTitle,el.faceAccent,el.faceBackgroundColor,el.backgroundOpacity,el.showDate,el.showSteps,el.showDistance,el.showHeart,el.showBattery])input.addEventListener("input",editorChanged);
+el.settingUnits.addEventListener("input",editorChanged);
 el.clockStyle.addEventListener("input",scaleModeChanged);el.transparentParts.addEventListener("input",scaleModeChanged);
 el.movePart.addEventListener("change",syncPositionControls);el.partX.addEventListener("input",()=>setPartPosition(Number(el.partX.value),Number(el.partY.value)));el.partY.addEventListener("input",()=>setPartPosition(Number(el.partX.value),Number(el.partY.value)));el.partScale.addEventListener("input",()=>setPartScale(Number(el.partScale.value)));
 el.facePreview.addEventListener("pointerdown",startPartDrag);el.facePreview.addEventListener("pointermove",movePartDrag);el.facePreview.addEventListener("pointerup",endPartDrag);el.facePreview.addEventListener("pointercancel",endPartDrag);
