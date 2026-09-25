@@ -52,6 +52,7 @@ The editor creates watch faces for the 240×280 display:
 3. Choose which fields to show: date, steps, distance, heart rate, and battery. Distance uses the native Moyoung distance field plus the native KM/MI unit fields, so it follows the watch's unit setting. Its digit set contains the additional half-width decimal sprite expected by the firmware. The point uses the same 5×5-on-8×24 geometry as the official template-34 face. At every scale the digit width is kept even and the point sprite exactly half-width, as required by the firmware renderer.
 4. Select a digital, horizontal binary BCD, or analogue clock. The four binary rows represent the two hour digits and two minute digits. Bits run from left to right as 8, 4, 2, and 1. Analogue mode uses the native Moyoung `HAND_HOUR` and `HAND_MINUTE` fields, so the watch rotates the hands.
 5. Select an element and change its X/Y position or **Scale**. You can also drag it directly in the preview. Both opaque and transparent binary clocks can be enlarged to 150%.
+   Activity labels use one consistent layout: the label is placed at the top left and its value starts directly below it. Units remain beside the value.
 6. Enable **Transparent elements** to remove the coloured panels. The editor pre-composes the background pixels into dynamic number images because RGB565 has no alpha channel.
 7. Click **Build watch face**. The browser creates a complete `.bin` file locally and selects it for upload.
 8. Optionally download the file as a backup.

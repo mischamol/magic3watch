@@ -1,6 +1,6 @@
 import {buildTypeBFace,rgbaToRgb565} from "./watchface-builder.js?v=20260924-26";
 
-const APP_VERSION = "2026.09.25-32";
+const APP_VERSION = "2026.09.25-34";
 
 const UUID = {
   service: "0000feea-0000-1000-8000-00805f9b34fb",
@@ -427,7 +427,7 @@ function timeDigitPositions(style="digital"){
 function analogGeometry(){const p=editorParts.time,s=p.scale;return {cx:p.x+p.width*s/2,cy:p.y+p.height*s/2,radius:34*s};}
 function fieldPositions(){
   const date=editorParts.date,steps=editorParts.steps,distance=editorParts.distance,heart=editorParts.heart,battery=editorParts.battery;
-  return {day:[date.x+8*date.scale,date.y+15*date.scale,date.scale],month:[date.x+48*date.scale,date.y+15*date.scale,date.scale],steps:[steps.x+43*steps.scale,steps.y+8*steps.scale,steps.scale],distance:[distance.x+36*distance.scale,distance.y+8*distance.scale,distance.scale],distanceUnit:[distance.x+83*distance.scale,distance.y+14*distance.scale,distance.scale],heart:[heart.x+60*heart.scale,heart.y+4*heart.scale,heart.scale],battery:[battery.x+21*battery.scale,battery.y+15*battery.scale,battery.scale]};
+  return {day:[date.x+8*date.scale,date.y+15*date.scale,date.scale],month:[date.x+48*date.scale,date.y+15*date.scale,date.scale],steps:[steps.x+8*steps.scale,steps.y+14*steps.scale,steps.scale],distance:[distance.x+8*distance.scale,distance.y+14*distance.scale,distance.scale],distanceUnit:[distance.x+48*distance.scale,distance.y+18*distance.scale,distance.scale],heart:[heart.x+8*heart.scale,heart.y+11*heart.scale,heart.scale],battery:[battery.x+8*battery.scale,battery.y+15*battery.scale,battery.scale]};
 }
 function drawFaceBase(context,options) {
   context.clearRect(0,0,240,280);
@@ -440,10 +440,10 @@ function drawFaceBase(context,options) {
     context.fillStyle=options.accent;context.font=`700 ${Math.round(10*Math.min(time.scale,1.25))}px Arial,sans-serif`;context.textAlign="center";["8","4","2","1"].forEach((label,index)=>context.fillText(label,time.x+48+index*40,time.y+9));context.textAlign="left";
   }else drawScaledPart(context,time,()=>{if(!options.transparent)roundedRect(context,0,0,time.width,time.height,14,FACE_LAYOUT.panel);if(options.clockStyle==="digital"){context.fillStyle=options.accent;context.font="700 42px Arial,sans-serif";context.textAlign="center";context.fillText(":",108,45);context.textAlign="left";}else{const cx=time.width/2,cy=time.height/2,radius=34;context.save();context.strokeStyle=options.accent;context.lineCap="round";for(let mark=0;mark<12;mark++){const angle=mark*Math.PI/6-Math.PI/2,outer=radius,inner=radius-(mark%3===0?6:3);context.globalAlpha=mark%3===0?.9:.5;context.lineWidth=mark%3===0?2:1;context.beginPath();context.moveTo(cx+Math.cos(angle)*inner,cy+Math.sin(angle)*inner);context.lineTo(cx+Math.cos(angle)*outer,cy+Math.sin(angle)*outer);context.stroke();}context.restore();}});
   if(options.date)drawScaledPart(context,date,()=>{if(!options.transparent)roundedRect(context,0,0,date.width,date.height,9,FACE_LAYOUT.panel);context.fillStyle=options.accent;context.font="700 8px Arial,sans-serif";context.fillText("DATE",7,9);context.font="700 16px Arial,sans-serif";context.fillText("/",39,27);});
-  if(options.battery)drawScaledPart(context,battery,()=>{if(!options.transparent)roundedRect(context,0,0,battery.width,battery.height,9,FACE_LAYOUT.panel);context.fillStyle=options.accent;context.font="700 8px Arial,sans-serif";context.fillText("BAT",7,9);context.fillText("%",54,28);});
-  if(options.steps)drawScaledPart(context,steps,()=>{if(!options.transparent)roundedRect(context,0,0,steps.width,steps.height,9,FACE_LAYOUT.panel);context.fillStyle=options.accent;context.font="700 9px Arial,sans-serif";context.fillText("STEPS",8,19);});
+  if(options.battery)drawScaledPart(context,battery,()=>{if(!options.transparent)roundedRect(context,0,0,battery.width,battery.height,9,FACE_LAYOUT.panel);context.fillStyle=options.accent;context.font="700 8px Arial,sans-serif";context.fillText("BAT",7,9);context.fillText("%",35,27);});
+  if(options.steps)drawScaledPart(context,steps,()=>{if(!options.transparent)roundedRect(context,0,0,steps.width,steps.height,9,FACE_LAYOUT.panel);context.fillStyle=options.accent;context.font="700 8px Arial,sans-serif";context.fillText("STEPS",7,9);});
   if(options.distance)drawScaledPart(context,distance,()=>{if(!options.transparent)roundedRect(context,0,0,distance.width,distance.height,9,FACE_LAYOUT.panel);context.fillStyle=options.accent;context.font="700 8px Arial,sans-serif";context.fillText("DIST",7,9);});
-  if(options.heart)drawScaledPart(context,heart,()=>{if(!options.transparent)roundedRect(context,0,0,heart.width,heart.height,9,FACE_LAYOUT.panel);context.fillStyle=options.accent;context.font="700 9px Arial,sans-serif";context.fillText("HEART",8,17);context.fillText("BPM",110,17);});
+  if(options.heart)drawScaledPart(context,heart,()=>{if(!options.transparent)roundedRect(context,0,0,heart.width,heart.height,9,FACE_LAYOUT.panel);context.fillStyle=options.accent;context.font="700 8px Arial,sans-serif";context.fillText("HEART",7,8);context.fillText("BPM",43,23);});
 }
 function drawExampleDigits(context,options) {
   context.textAlign="center";context.textBaseline="middle";context.fillStyle=options.accent;
@@ -454,7 +454,7 @@ function drawExampleDigits(context,options) {
   if(options.date){draw("19",...positions.day);draw("09",...positions.month);}
   if(options.battery)draw("82",...positions.battery);
   if(options.steps)draw("8240",...positions.steps);
-  if(options.distance){const metric=el.settingUnits.value!=="1";draw(metric?"8.2":"5.1",...positions.distance);context.font=`700 ${Math.round(9*editorParts.distance.scale)}px Arial,sans-serif`;context.fillText(metric?"KM":"MI",positions.distanceUnit[0]+8*editorParts.distance.scale,positions.distanceUnit[1]+5*editorParts.distance.scale);}
+  if(options.distance){const metric=el.settingUnits.value!=="1",scale=editorParts.distance.scale;draw(metric?"8.2":"5.1",...positions.distance);context.font=`700 ${Math.round(9*scale)}px Arial,sans-serif`;context.fillText(metric?"KM":"MI",positions.distanceUnit[0]+10*scale,positions.distanceUnit[1]+7*scale);}
   if(options.heart)draw("68",...positions.heart);
   context.textAlign="left";
 }
