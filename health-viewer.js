@@ -1,6 +1,6 @@
 import {buildTypeBFace,rgbaToRgb565} from "./watchface-builder.js?v=20260924-26";
 
-const APP_VERSION = "2026.09.25-34";
+const APP_VERSION = "2026.09.26-37";
 
 const UUID = {
   service: "0000feea-0000-1000-8000-00805f9b34fb",
@@ -416,13 +416,13 @@ function drawCover(context,image,width,height) {
 function faceOptions() {
   return {title:el.faceTitle.value.trim()||"MAGIC 3",accent:el.faceAccent.value,background:el.faceBackgroundColor.value,imageOpacity:Math.max(0,Math.min(1,Number(el.backgroundOpacity.value)/100)),clockStyle:el.clockStyle.value,transparent:el.transparentParts.checked,date:el.showDate.checked,steps:el.showSteps.checked,distance:el.showDistance.checked,heart:el.showHeart.checked,battery:el.showBattery.checked};
 }
-function timeDigitPositions(style="digital"){
+function timeDigitPositions(style="digital",compact=false){
   const p=editorParts.time,s=p.scale;
   if(style==="binary"){
     const size=Math.round(16*s),left=p.x+48-size/2,firstY=p.y+18;
     return [0,1,2,3].map(row=>[left,firstY+row*18*s]);
   }
-  return [[12,14],[54,14],[120,14],[162,14]].map(([x,y])=>[p.x+x*s,p.y+y*s]);
+  return (compact?[[22,24],[64,24],[130,24],[172,24]]:[[12,14],[54,14],[120,14],[162,14]]).map(([x,y])=>[p.x+x*s,p.y+y*s]);
 }
 function analogGeometry(){const p=editorParts.time,s=p.scale;return {cx:p.x+p.width*s/2,cy:p.y+p.height*s/2,radius:34*s};}
 function fieldPositions(){
@@ -448,7 +448,7 @@ function drawFaceBase(context,options) {
 function drawExampleDigits(context,options) {
   context.textAlign="center";context.textBaseline="middle";context.fillStyle=options.accent;
   if(options.clockStyle==="analog")drawAnalogHands(context,10,9,options.accent);
-  else [1,0,0,9].forEach((digit,index)=>{const [x,y]=timeDigitPositions(options.clockStyle)[index];drawTimeGlyph(context,digit,x,y,options.accent,options.clockStyle,editorParts.time.scale);});
+  else [1,0,0,9].forEach((digit,index)=>{const compact=options.transparent&&options.clockStyle==="digital",[x,y]=timeDigitPositions(options.clockStyle,compact)[index];drawTimeGlyph(context,digit,x,y,options.accent,options.clockStyle,editorParts.time.scale,compact);});
   const draw=(text,x,y,scale=1)=>{context.font=`700 ${Math.round(18*scale)}px Arial,sans-serif`;[...text].forEach((digit,index)=>context.fillText(digit,x+(index*14+7)*scale,y+11*scale));};
   const positions=fieldPositions();
   if(options.date){draw("19",...positions.day);draw("09",...positions.month);}
@@ -470,8 +470,8 @@ function editorChanged(){if(generatedFace&&selectedFace?.bytes===generatedFace.b
 function canvasRgb565(canvas) {
   const context=canvas.getContext("2d",{willReadFrequently:true});return rgbaToRgb565(context.getImageData(0,0,canvas.width,canvas.height));
 }
-function drawTimeGlyph(context,digit,x,y,foreground,style,scale=1) {
-  if(style!=="binary"){context.fillStyle=foreground;context.font=`700 ${Math.round(54*scale)}px Arial,sans-serif`;context.textAlign="center";context.textBaseline="middle";context.fillText(String(digit),x+21*scale,y+32*scale);return;}
+function drawTimeGlyph(context,digit,x,y,foreground,style,scale=1,compact=false) {
+  if(style!=="binary"){context.fillStyle=foreground;context.font=`700 ${Math.round((compact?40:54)*scale)}px Arial,sans-serif`;context.textAlign="center";context.textBaseline="middle";context.fillText(String(digit),x+(compact?11:21)*scale,y+(compact?22:32)*scale);return;}
   context.save();context.strokeStyle=foreground;context.fillStyle=foreground;context.lineWidth=2;
   const size=16*scale;[8,4,2,1].forEach((value,column)=>{context.beginPath();context.arc(x+size/2+column*40,y+size/2,7*scale,0,Math.PI*2);if(digit&value)context.fill();else{context.globalAlpha=.38;context.stroke();context.globalAlpha=1;}});context.restore();
 }
@@ -543,9 +543,12 @@ function makeWatchFace() {
     const minuteWidth=Math.round(10*scale),minuteHeight=Math.round(40*scale),minuteIndex=blobs.length;blobs.push(analogHandBlob(minuteWidth,minuteHeight,options.accent,Math.max(2,Math.round(3*scale))));entries.push({type:0xf2,imageIndex:minuteIndex,x:Math.round(cx-minuteWidth/2),y:Math.round(cy-minuteHeight),width:minuteWidth,height:minuteHeight});
     const pinSize=Math.round(12*scale),pinIndex=blobs.length;blobs.push(analogPinBlob(options.accent,pinSize));entries.push({type:0xf4,imageIndex:pinIndex,x:Math.round(cx-pinSize/2),y:Math.round(cy-pinSize/2),width:pinSize,height:pinSize});
   }else{
-    const scale=editorParts.time.scale,width=Math.round(42*scale),height=Math.round(64*scale);timeDigitPositions("digital").forEach(([x,y],index)=>{x=Math.round(x);y=Math.round(y);const imageIndex=sharedBig??=addDigitSet(width,height,`700 ${Math.round(54*scale)}px Arial,sans-serif`,x,y);entries.push({type:[0x40,0x41,0x43,0x44][index],imageIndex,x,y,width,height});});
+    // Transparent time digits need a separate set for every screen position.
+    // A tightly cropped set keeps all forty position-specific images within
+    // template 34's fixed 300-KiB unpacked-image area.
+    const scale=editorParts.time.scale,compact=options.transparent,width=Math.round((compact?22:42)*scale),height=Math.round((compact?44:64)*scale),fontSize=Math.round((compact?40:54)*scale);timeDigitPositions("digital",compact).forEach(([x,y],index)=>{x=Math.round(x);y=Math.round(y);const imageIndex=compact?addDigitSet(width,height,`700 ${fontSize}px Arial,sans-serif`,x,y):(sharedBig??=addDigitSet(width,height,`700 ${fontSize}px Arial,sans-serif`,x,y));entries.push({type:[0x40,0x41,0x43,0x44][index],imageIndex,x,y,width,height});});
   }
-  const positions=fieldPositions(),smallIndex=(x,y,scale)=>{const width=Math.round(12*scale),height=Math.round(20*scale),key=`${width}x${height}`;let index=smallSets.get(key);if(index===undefined){index=addDigitSet(width,height,`700 ${Math.round(17*scale)}px Arial,sans-serif`,Math.round(x),Math.round(y));smallSets.set(key,index);}return {index,width,height,x:Math.round(x),y:Math.round(y)};};
+  const positions=fieldPositions(),smallIndex=(x,y,scale)=>{const width=Math.round(12*scale),height=Math.round(20*scale),roundedX=Math.round(x),roundedY=Math.round(y),key=options.transparent?`${width}x${height}@${roundedX},${roundedY}`:`${width}x${height}`;let index=smallSets.get(key);if(index===undefined){index=addDigitSet(width,height,`700 ${Math.round(17*scale)}px Arial,sans-serif`,roundedX,roundedY);smallSets.set(key,index);}return {index,width,height,x:roundedX,y:roundedY};};
   if(options.date){const day=smallIndex(...positions.day),month=smallIndex(...positions.month);entries.push({type:0x30,imageIndex:day.index,x:day.x,y:day.y,width:day.width,height:day.height},{type:0x11,imageIndex:month.index,x:month.x,y:month.y,width:month.width,height:month.height});}
   if(options.steps){const item=smallIndex(...positions.steps);entries.push({type:0x62,imageIndex:item.index,x:item.x,y:item.y,width:item.width,height:item.height});}
   if(options.distance){const [distanceX,distanceY,distanceScale]=positions.distance,digitWidth=Math.max(2,Math.round(6*distanceScale)*2),digitHeight=Math.round(20*distanceScale),distanceIndex=blobs.length,roundedX=Math.round(distanceX),roundedY=Math.round(distanceY);blobs.push(...digitBlobs(digitWidth,digitHeight,`700 ${Math.round(17*distanceScale)}px Arial,sans-serif`,options.accent,options.transparent?base:null,roundedX,roundedY));const pointWidth=digitWidth/2;blobs.push(decimalPointBlob(pointWidth,digitHeight,options.accent,options.transparent?base:null,roundedX,roundedY));const unitScale=editorParts.distance.scale,unitWidth=Math.round(20*unitScale),unitHeight=Math.round(14*unitScale),unitX=Math.round(positions.distanceUnit[0]),unitY=Math.round(positions.distanceUnit[1]),kmIndex=blobs.length;blobs.push(unitBlob("KM",unitWidth,unitHeight,options.accent,options.transparent?base:null,unitX,unitY));const miIndex=blobs.length;blobs.push(unitBlob("MI",unitWidth,unitHeight,options.accent,options.transparent?base:null,unitX,unitY));entries.push({type:0xa2,imageIndex:distanceIndex,x:roundedX,y:roundedY,width:digitWidth,height:digitHeight},{type:0xa5,imageIndex:kmIndex,x:unitX,y:unitY,width:unitWidth,height:unitHeight},{type:0xa6,imageIndex:miIndex,x:unitX,y:unitY,width:unitWidth,height:unitHeight});}
