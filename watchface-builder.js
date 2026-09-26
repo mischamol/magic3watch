@@ -9,10 +9,12 @@ const TYPE_B_PAYLOAD_SIZE = 300 * 1024;
 
 function deduplicateBlobs(blobs) {
   const offsets=new Uint32Array(blobs.length),unique=[],seen=new Map();let payloadLength=0;
+  const keyFor=blob=>{let hash=2166136261;for(const byte of blob){hash^=byte;hash=Math.imul(hash,16777619);}return `${blob.length}:${hash>>>0}`;};
+  const equal=(left,right)=>{if(left.length!==right.length)return false;for(let index=0;index<left.length;index++)if(left[index]!==right[index])return false;return true;};
   for(let index=0;index<blobs.length;index++){
-    const blob=blobs[index],match=seen.get(blob);
-    if(match!==undefined)offsets[index]=match;
-    else{offsets[index]=payloadLength;unique.push({blob,offset:payloadLength});seen.set(blob,payloadLength);payloadLength+=blob.length;}
+    const blob=blobs[index],key=keyFor(blob),candidates=seen.get(key)??[],match=candidates.find(candidate=>equal(candidate.blob,blob));
+    if(match)offsets[index]=match.offset;
+    else{const item={blob,offset:payloadLength};offsets[index]=payloadLength;unique.push(item);candidates.push(item);seen.set(key,candidates);payloadLength+=blob.length;}
   }
   return {offsets,unique,payloadLength};
 }

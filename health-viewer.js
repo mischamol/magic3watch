@@ -1,6 +1,6 @@
-import {buildTypeBFace,rgbaToRgb565} from "./watchface-builder.js?v=20260924-26";
+import {buildTypeBFace,rgbaToRgb565} from "./watchface-builder.js?v=20260926-27";
 
-const APP_VERSION = "2026.09.26-37";
+const APP_VERSION = "2026.09.26-42";
 
 const UUID = {
   service: "0000feea-0000-1000-8000-00805f9b34fb",
@@ -389,19 +389,20 @@ async function findWatch(){requireConnected();setBusy(true);try{await writeSetti
 const FACE_LAYOUT = {panel:"#0b1627",big:{width:42,height:64},small:{width:14,height:22}};
 const editorParts = {
   time:{x:12,y:36,width:216,height:92,scale:1},date:{x:12,y:142,width:94,height:41,scale:1},
-  steps:{x:12,y:191,width:104,height:38,scale:1},distance:{x:122,y:191,width:106,height:38,scale:1},
+  steps:{x:12,y:191,width:104,height:38,scale:1},distance:{x:122,y:191,width:68,height:38,scale:1},
   heart:{x:12,y:234,width:142,height:34,scale:1},battery:{x:164,y:142,width:64,height:41,scale:1},
 };
 let draggedPart=null,dragOffset={x:0,y:0};
 
 function partBounds(key){
   const part=editorParts[key];
-  if(key==="time"&&el.clockStyle.value==="binary")return {x:part.x,y:part.y,width:part.width,height:part.height*part.scale};
+  if(key==="time"&&["binary","binaryDigits"].includes(el.clockStyle.value))return {x:part.x,y:part.y,width:part.width,height:part.height*part.scale};
   return {x:part.x,y:part.y,width:part.width*part.scale,height:part.height*part.scale};
 }
 function partScaleMaximum(key){
   const part=editorParts[key];
   if(key==="time"&&el.clockStyle.value==="binary")return Math.floor(Math.min(1.5,(280-part.y)/part.height)*100);
+  if(key==="time"&&el.clockStyle.value==="binaryDigits")return Math.floor(Math.min(2,(280-part.y)/part.height)*100);
   return Math.floor(Math.min(1.5,240/part.width,280/part.height)*100);
 }
 function drawScaledPart(context,part,draw){context.save();context.translate(part.x,part.y);context.scale(part.scale,part.scale);draw();context.restore();}
@@ -414,7 +415,7 @@ function drawCover(context,image,width,height) {
   context.drawImage(image,(width-drawWidth)/2,(height-drawHeight)/2,drawWidth,drawHeight);
 }
 function faceOptions() {
-  return {title:el.faceTitle.value.trim()||"MAGIC 3",accent:el.faceAccent.value,background:el.faceBackgroundColor.value,imageOpacity:Math.max(0,Math.min(1,Number(el.backgroundOpacity.value)/100)),clockStyle:el.clockStyle.value,transparent:el.transparentParts.checked,date:el.showDate.checked,steps:el.showSteps.checked,distance:el.showDistance.checked,heart:el.showHeart.checked,battery:el.showBattery.checked};
+  return {title:el.faceTitle.value.trim()||"MAGIC 3",accent:el.faceAccent.value,background:el.faceBackgroundColor.value,imageOpacity:Math.max(0,Math.min(1,Number(el.backgroundOpacity.value)/100)),clockStyle:el.clockStyle.value,distanceUnit:el.settingUnits.value!=="1"?"KM":"MI",transparent:el.transparentParts.checked,date:el.showDate.checked,steps:el.showSteps.checked,distance:el.showDistance.checked,heart:el.showHeart.checked,battery:el.showBattery.checked};
 }
 function timeDigitPositions(style="digital",compact=false){
   const p=editorParts.time,s=p.scale;
@@ -422,12 +423,16 @@ function timeDigitPositions(style="digital",compact=false){
     const size=Math.round(16*s),left=p.x+48-size/2,firstY=p.y+18;
     return [0,1,2,3].map(row=>[left,firstY+row*18*s]);
   }
+  if(style==="binaryDigits"){
+    const width=16*s,totalWidth=width+3*28*s,left=p.x+(p.width-totalWidth)/2,firstY=p.y+3*s;
+    return [0,1,2,3].map(row=>[left,firstY+row*22*s]);
+  }
   return (compact?[[22,24],[64,24],[130,24],[172,24]]:[[12,14],[54,14],[120,14],[162,14]]).map(([x,y])=>[p.x+x*s,p.y+y*s]);
 }
 function analogGeometry(){const p=editorParts.time,s=p.scale;return {cx:p.x+p.width*s/2,cy:p.y+p.height*s/2,radius:34*s};}
 function fieldPositions(){
   const date=editorParts.date,steps=editorParts.steps,distance=editorParts.distance,heart=editorParts.heart,battery=editorParts.battery;
-  return {day:[date.x+8*date.scale,date.y+15*date.scale,date.scale],month:[date.x+48*date.scale,date.y+15*date.scale,date.scale],steps:[steps.x+8*steps.scale,steps.y+14*steps.scale,steps.scale],distance:[distance.x+8*distance.scale,distance.y+14*distance.scale,distance.scale],distanceUnit:[distance.x+48*distance.scale,distance.y+18*distance.scale,distance.scale],heart:[heart.x+8*heart.scale,heart.y+11*heart.scale,heart.scale],battery:[battery.x+8*battery.scale,battery.y+15*battery.scale,battery.scale]};
+  return {day:[date.x+8*date.scale,date.y+15*date.scale,date.scale],month:[date.x+48*date.scale,date.y+15*date.scale,date.scale],steps:[steps.x+8*steps.scale,steps.y+14*steps.scale,steps.scale],distance:[distance.x+8*distance.scale,distance.y+14*distance.scale,distance.scale],heart:[heart.x+8*heart.scale,heart.y+11*heart.scale,heart.scale],battery:[battery.x+8*battery.scale,battery.y+15*battery.scale,battery.scale]};
 }
 function drawFaceBase(context,options) {
   context.clearRect(0,0,240,280);
@@ -435,14 +440,14 @@ function drawFaceBase(context,options) {
   if(customFaceBackground&&options.imageOpacity>0){context.save();context.globalAlpha=options.imageOpacity;drawCover(context,customFaceBackground,240,280);context.fillStyle="rgba(0,0,0,.28)";context.fillRect(0,0,240,280);context.restore();}
   context.textBaseline="middle"; context.fillStyle=options.accent;context.font="700 12px Arial,sans-serif";context.fillText(options.title.slice(0,12).toUpperCase(),16,20);
   const time=editorParts.time,date=editorParts.date,battery=editorParts.battery,steps=editorParts.steps,distance=editorParts.distance,heart=editorParts.heart;
-  if(options.clockStyle==="binary"){
-    const bounds=partBounds("time");if(!options.transparent)roundedRect(context,time.x+32,bounds.y,152,bounds.height,12,FACE_LAYOUT.panel);
-    context.fillStyle=options.accent;context.font=`700 ${Math.round(10*Math.min(time.scale,1.25))}px Arial,sans-serif`;context.textAlign="center";["8","4","2","1"].forEach((label,index)=>context.fillText(label,time.x+48+index*40,time.y+9));context.textAlign="left";
+  if(["binary","binaryDigits"].includes(options.clockStyle)){
+    const bounds=partBounds("time"),digits=options.clockStyle==="binaryDigits",panelWidth=digits?Math.min(time.width,108*time.scale):152;if(!options.transparent)roundedRect(context,time.x+(time.width-panelWidth)/2,bounds.y,panelWidth,bounds.height,12,FACE_LAYOUT.panel);
+    if(!digits){context.fillStyle=options.accent;context.font=`700 ${Math.round(10*Math.min(time.scale,1.25))}px Arial,sans-serif`;context.textAlign="center";["8","4","2","1"].forEach((label,index)=>context.fillText(label,time.x+48+index*40,time.y+9));context.textAlign="left";}
   }else drawScaledPart(context,time,()=>{if(!options.transparent)roundedRect(context,0,0,time.width,time.height,14,FACE_LAYOUT.panel);if(options.clockStyle==="digital"){context.fillStyle=options.accent;context.font="700 42px Arial,sans-serif";context.textAlign="center";context.fillText(":",108,45);context.textAlign="left";}else{const cx=time.width/2,cy=time.height/2,radius=34;context.save();context.strokeStyle=options.accent;context.lineCap="round";for(let mark=0;mark<12;mark++){const angle=mark*Math.PI/6-Math.PI/2,outer=radius,inner=radius-(mark%3===0?6:3);context.globalAlpha=mark%3===0?.9:.5;context.lineWidth=mark%3===0?2:1;context.beginPath();context.moveTo(cx+Math.cos(angle)*inner,cy+Math.sin(angle)*inner);context.lineTo(cx+Math.cos(angle)*outer,cy+Math.sin(angle)*outer);context.stroke();}context.restore();}});
   if(options.date)drawScaledPart(context,date,()=>{if(!options.transparent)roundedRect(context,0,0,date.width,date.height,9,FACE_LAYOUT.panel);context.fillStyle=options.accent;context.font="700 8px Arial,sans-serif";context.fillText("DATE",7,9);context.font="700 16px Arial,sans-serif";context.fillText("/",39,27);});
-  if(options.battery)drawScaledPart(context,battery,()=>{if(!options.transparent)roundedRect(context,0,0,battery.width,battery.height,9,FACE_LAYOUT.panel);context.fillStyle=options.accent;context.font="700 8px Arial,sans-serif";context.fillText("BAT",7,9);context.fillText("%",35,27);});
+  if(options.battery)drawScaledPart(context,battery,()=>{if(!options.transparent)roundedRect(context,0,0,battery.width,battery.height,9,FACE_LAYOUT.panel);context.fillStyle=options.accent;context.font="700 8px Arial,sans-serif";context.fillText("BAT %",7,9);});
   if(options.steps)drawScaledPart(context,steps,()=>{if(!options.transparent)roundedRect(context,0,0,steps.width,steps.height,9,FACE_LAYOUT.panel);context.fillStyle=options.accent;context.font="700 8px Arial,sans-serif";context.fillText("STEPS",7,9);});
-  if(options.distance)drawScaledPart(context,distance,()=>{if(!options.transparent)roundedRect(context,0,0,distance.width,distance.height,9,FACE_LAYOUT.panel);context.fillStyle=options.accent;context.font="700 8px Arial,sans-serif";context.fillText("DIST",7,9);});
+  if(options.distance)drawScaledPart(context,distance,()=>{if(!options.transparent)roundedRect(context,0,0,distance.width,distance.height,9,FACE_LAYOUT.panel);context.fillStyle=options.accent;context.font="700 8px Arial,sans-serif";context.fillText(`DIST ${options.distanceUnit}`,7,9);});
   if(options.heart)drawScaledPart(context,heart,()=>{if(!options.transparent)roundedRect(context,0,0,heart.width,heart.height,9,FACE_LAYOUT.panel);context.fillStyle=options.accent;context.font="700 8px Arial,sans-serif";context.fillText("HEART",7,8);context.fillText("BPM",43,23);});
 }
 function drawExampleDigits(context,options) {
@@ -454,7 +459,7 @@ function drawExampleDigits(context,options) {
   if(options.date){draw("19",...positions.day);draw("09",...positions.month);}
   if(options.battery)draw("82",...positions.battery);
   if(options.steps)draw("8240",...positions.steps);
-  if(options.distance){const metric=el.settingUnits.value!=="1",scale=editorParts.distance.scale;draw(metric?"8.2":"5.1",...positions.distance);context.font=`700 ${Math.round(9*scale)}px Arial,sans-serif`;context.fillText(metric?"KM":"MI",positions.distanceUnit[0]+10*scale,positions.distanceUnit[1]+7*scale);}
+  if(options.distance)draw(options.distanceUnit==="KM"?"8.2":"5.1",...positions.distance);
   if(options.heart)draw("68",...positions.heart);
   context.textAlign="left";
 }
@@ -471,7 +476,8 @@ function canvasRgb565(canvas) {
   const context=canvas.getContext("2d",{willReadFrequently:true});return rgbaToRgb565(context.getImageData(0,0,canvas.width,canvas.height));
 }
 function drawTimeGlyph(context,digit,x,y,foreground,style,scale=1,compact=false) {
-  if(style!=="binary"){context.fillStyle=foreground;context.font=`700 ${Math.round((compact?40:54)*scale)}px Arial,sans-serif`;context.textAlign="center";context.textBaseline="middle";context.fillText(String(digit),x+(compact?11:21)*scale,y+(compact?22:32)*scale);return;}
+  if(!["binary","binaryDigits"].includes(style)){context.fillStyle=foreground;context.font=`700 ${Math.round((compact?40:54)*scale)}px Arial,sans-serif`;context.textAlign="center";context.textBaseline="middle";context.fillText(String(digit),x+(compact?11:21)*scale,y+(compact?22:32)*scale);return;}
+  if(style==="binaryDigits"){const width=16*scale,height=20*scale;context.save();context.fillStyle=foreground;context.font=`700 ${Math.round(18*scale)}px Consolas,monospace`;context.textAlign="center";context.textBaseline="middle";[8,4,2,1].forEach((value,column)=>context.fillText(digit&value?"1":"0",x+width/2+column*28*scale,y+height/2));context.restore();return;}
   context.save();context.strokeStyle=foreground;context.fillStyle=foreground;context.lineWidth=2;
   const size=16*scale;[8,4,2,1].forEach((value,column)=>{context.beginPath();context.arc(x+size/2+column*40,y+size/2,7*scale,0,Math.PI*2);if(digit&value)context.fill();else{context.globalAlpha=.38;context.stroke();context.globalAlpha=1;}});context.restore();
 }
@@ -485,13 +491,14 @@ function digitBlobs(width,height,font,foreground,backgroundCanvas=null,x=0,y=0,s
   }
   return blobs;
 }
-function binaryBitBlobs(bitValue,foreground,backgroundCanvas,x,y,scale=1) {
+function binaryBitBlobs(bitValue,foreground,backgroundCanvas,x,y,scale=1,style="binary") {
   const variants=[];
   for(const active of [false,true]){
-    const size=Math.round(16*scale),canvas=document.createElement("canvas");canvas.width=size;canvas.height=size;const context=canvas.getContext("2d",{alpha:false});
-    if(backgroundCanvas)context.drawImage(backgroundCanvas,x,y,size,size,0,0,size,size);else{context.fillStyle=FACE_LAYOUT.panel;context.fillRect(0,0,size,size);}
-    context.save();context.strokeStyle=foreground;context.fillStyle=foreground;context.lineWidth=Math.max(2,Math.round(2*scale));context.beginPath();context.arc(size/2,size/2,7*scale,0,Math.PI*2);
-    if(active)context.fill();else{context.globalAlpha=.38;context.stroke();}
+    const digits=style==="binaryDigits",width=Math.round(16*scale),height=Math.round((digits?20:16)*scale),canvas=document.createElement("canvas");canvas.width=width;canvas.height=height;const context=canvas.getContext("2d",{alpha:false});
+    if(backgroundCanvas)context.drawImage(backgroundCanvas,x,y,width,height,0,0,width,height);else{context.fillStyle=FACE_LAYOUT.panel;context.fillRect(0,0,width,height);}
+    context.save();context.strokeStyle=foreground;context.fillStyle=foreground;
+    if(digits){context.font=`700 ${Math.round(18*scale)}px Consolas,monospace`;context.textAlign="center";context.textBaseline="middle";context.fillText(active?"1":"0",width/2,height/2);}
+    else{context.lineWidth=Math.max(2,Math.round(2*scale));context.beginPath();context.arc(width/2,height/2,7*scale,0,Math.PI*2);if(active)context.fill();else{context.globalAlpha=.38;context.stroke();}}
     context.restore();variants.push(canvasRgb565(canvas));
   }
   return Array.from({length:10},(_,digit)=>variants[digit&bitValue?1:0]);
@@ -529,13 +536,13 @@ function makeWatchFace() {
   const blobs=[canvasRgb565(base)],addDigitSet=(width,height,font,x,y,style="digital")=>{const index=blobs.length;blobs.push(...digitBlobs(width,height,font,options.accent,options.transparent?base:null,x,y,style));return index;};
   const entries=[{type:0x01,imageIndex:0,x:0,y:0,width:240,height:280}];
   let sharedBig=null;const smallSets=new Map(),binarySets=new Map();
-  if(options.clockStyle==="binary"){
-    const scale=editorParts.time.scale,size=Math.round(16*scale);
-    timeDigitPositions("binary").forEach(([rowX,rowY],row)=>{
+  if(["binary","binaryDigits"].includes(options.clockStyle)){
+    const style=options.clockStyle,scale=editorParts.time.scale,width=Math.round(16*scale),height=Math.round((style==="binaryDigits"?20:16)*scale),columnPitch=(style==="binaryDigits"?28:40)*scale;
+    timeDigitPositions(style).forEach(([rowX,rowY],row)=>{
       [8,4,2,1].forEach((bitValue,column)=>{
-        const x=Math.round(rowX+column*40),y=Math.round(rowY),key=String(bitValue);let imageIndex=binarySets.get(key);
-        if(imageIndex===undefined||options.transparent){imageIndex=blobs.length;blobs.push(...binaryBitBlobs(bitValue,options.accent,options.transparent?base:null,x,y,scale));if(!options.transparent)binarySets.set(key,imageIndex);}
-        entries.push({type:[0x40,0x41,0x43,0x44][row],imageIndex,x,y,width:size,height:size});
+        const x=Math.round(rowX+column*columnPitch),y=Math.round(rowY),key=`${style}:${bitValue}`;let imageIndex=binarySets.get(key);
+        if(imageIndex===undefined||options.transparent){imageIndex=blobs.length;blobs.push(...binaryBitBlobs(bitValue,options.accent,options.transparent?base:null,x,y,scale,style));if(!options.transparent)binarySets.set(key,imageIndex);}
+        entries.push({type:[0x40,0x41,0x43,0x44][row],imageIndex,x,y,width,height});
       });
     });
   }else if(options.clockStyle==="analog"){
@@ -551,14 +558,14 @@ function makeWatchFace() {
   const positions=fieldPositions(),smallIndex=(x,y,scale)=>{const width=Math.round(12*scale),height=Math.round(20*scale),roundedX=Math.round(x),roundedY=Math.round(y),key=options.transparent?`${width}x${height}@${roundedX},${roundedY}`:`${width}x${height}`;let index=smallSets.get(key);if(index===undefined){index=addDigitSet(width,height,`700 ${Math.round(17*scale)}px Arial,sans-serif`,roundedX,roundedY);smallSets.set(key,index);}return {index,width,height,x:roundedX,y:roundedY};};
   if(options.date){const day=smallIndex(...positions.day),month=smallIndex(...positions.month);entries.push({type:0x30,imageIndex:day.index,x:day.x,y:day.y,width:day.width,height:day.height},{type:0x11,imageIndex:month.index,x:month.x,y:month.y,width:month.width,height:month.height});}
   if(options.steps){const item=smallIndex(...positions.steps);entries.push({type:0x62,imageIndex:item.index,x:item.x,y:item.y,width:item.width,height:item.height});}
-  if(options.distance){const [distanceX,distanceY,distanceScale]=positions.distance,digitWidth=Math.max(2,Math.round(6*distanceScale)*2),digitHeight=Math.round(20*distanceScale),distanceIndex=blobs.length,roundedX=Math.round(distanceX),roundedY=Math.round(distanceY);blobs.push(...digitBlobs(digitWidth,digitHeight,`700 ${Math.round(17*distanceScale)}px Arial,sans-serif`,options.accent,options.transparent?base:null,roundedX,roundedY));const pointWidth=digitWidth/2;blobs.push(decimalPointBlob(pointWidth,digitHeight,options.accent,options.transparent?base:null,roundedX,roundedY));const unitScale=editorParts.distance.scale,unitWidth=Math.round(20*unitScale),unitHeight=Math.round(14*unitScale),unitX=Math.round(positions.distanceUnit[0]),unitY=Math.round(positions.distanceUnit[1]),kmIndex=blobs.length;blobs.push(unitBlob("KM",unitWidth,unitHeight,options.accent,options.transparent?base:null,unitX,unitY));const miIndex=blobs.length;blobs.push(unitBlob("MI",unitWidth,unitHeight,options.accent,options.transparent?base:null,unitX,unitY));entries.push({type:0xa2,imageIndex:distanceIndex,x:roundedX,y:roundedY,width:digitWidth,height:digitHeight},{type:0xa5,imageIndex:kmIndex,x:unitX,y:unitY,width:unitWidth,height:unitHeight},{type:0xa6,imageIndex:miIndex,x:unitX,y:unitY,width:unitWidth,height:unitHeight});}
+  if(options.distance){const [distanceX,distanceY,distanceScale]=positions.distance,digitWidth=Math.max(2,Math.round(6*distanceScale)*2),digitHeight=Math.round(20*distanceScale),distanceIndex=blobs.length,roundedX=Math.round(distanceX),roundedY=Math.round(distanceY);blobs.push(...digitBlobs(digitWidth,digitHeight,`700 ${Math.round(17*distanceScale)}px Arial,sans-serif`,options.accent,options.transparent?base:null,roundedX,roundedY));const pointWidth=digitWidth/2;blobs.push(decimalPointBlob(pointWidth,digitHeight,options.accent,options.transparent?base:null,roundedX,roundedY));entries.push({type:0xa2,imageIndex:distanceIndex,x:roundedX,y:roundedY,width:digitWidth,height:digitHeight});}
   if(options.heart){const item=smallIndex(...positions.heart);entries.push({type:0x65,imageIndex:item.index,x:item.x,y:item.y,width:item.width,height:item.height});}
   if(options.battery){const item=smallIndex(...positions.battery);entries.push({type:0xd2,imageIndex:item.index,x:item.x,y:item.y,width:item.width,height:item.height});}
   blobs.push(canvasRgb565(thumbnail));
   const faceNumber=50000+(Date.now()%10000),bytes=buildTypeBFace({entries,blobs,faceNumber}),name=`magic3-custom-${faceNumber}.bin`,meta=inspectFace(bytes);
   generatedFace={name,bytes};selectedFace={file:{name,size:bytes.length},bytes,meta};el.faceProgress.value=0;el.downloadBuiltFace.disabled=false;
   el.faceInfo.className=bytes.length<=MAX_SAFE_FACE_SIZE?"ok":"bad";el.faceInfo.textContent=`${name} · ${(bytes.length/1024).toLocaleString("en-GB",{maximumFractionDigits:1})} kB · Type B/0x81 · template 34 · ${meta.dataCount} fields${bytes.length>MAX_SAFE_FACE_SIZE?" · too large for a safe MOY-NBA5 upload":""}`;
-  const styleName=options.clockStyle==="binary"?"Binary BCD watch face":options.clockStyle==="analog"?"Analogue watch face":"Watch face";
+  const styleName=options.clockStyle==="binary"?"Binary dots watch face":options.clockStyle==="binaryDigits"?"Binary 1/0 watch face":options.clockStyle==="analog"?"Analogue watch face":"Watch face";
   el.builderInfo.className="ok";el.builderInfo.textContent=`${styleName} built and selected${options.transparent&&options.clockStyle!=="analog"?" with the background baked behind the digits":""}. You can download or upload it directly.`;
   log(`Custom watch face built: ${name}, ${bytes.length} bytes, ${entries.length} fields and ${blobs.length} images.`);setConnectedControls(Boolean(conn.device?.gatt?.connected));
 }

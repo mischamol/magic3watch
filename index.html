@@ -179,7 +179,7 @@
             <input id="backgroundOpacity" type="number" min="0" max="100" step="5" value="100">
           </label>
           <label class="control">Time display
-            <select id="clockStyle"><option value="digital">Digital clock</option><option value="binary">Binary BCD clock (horizontal)</option><option value="analog">Analogue clock</option></select>
+            <select id="clockStyle"><option value="digital">Digital clock</option><option value="binary">Binary dots</option><option value="binaryDigits">Binary 1s and 0s</option><option value="analog">Analogue clock</option></select>
           </label>
           <label class="control">Element to position and scale
             <select id="movePart"><option value="time">Time</option><option value="date">Date</option><option value="steps">Steps</option><option value="distance">Distance</option><option value="heart">Heart rate</option><option value="battery">Battery</option></select>
@@ -206,7 +206,7 @@
           <button id="buildFace">Build watch face</button>
           <button id="downloadBuiltFace" class="secondary" disabled>Download .bin</button>
         </div>
-        <p id="builderInfo" class="muted">The preview uses test values. Choose digital, binary with four bits under 8–4–2–1, or analogue with hour and minute hands. Select an element to move or scale it. Distance includes a dedicated decimal-point sprite so the watch displays a point instead of borrowing an unrelated image.</p>
+        <p id="builderInfo" class="muted">The preview uses test values. Choose digital, Binary dots with four bits under 8–4–2–1, Binary 1s and 0s without a value header, or analogue with hour and minute hands. Select an element to move or scale it. Distance includes a dedicated decimal-point sprite so the watch displays a point instead of borrowing an unrelated image.</p>
       </div>
     </div>
     <div class="subpanel">
@@ -281,6 +281,6 @@
   <button class="nav-button" type="button" data-target="faces"><span class="nav-icon">▣</span><span>Watch face</span></button>
   <button class="nav-button" type="button" data-target="more"><span class="nav-icon">•••</span><span>More</span></button>
 </nav>
-<script type="module" src="./health-viewer.js?v=20260926-37"></script>
+<script type="module" src="./health-viewer.js?v=20260926-42"></script>
 </body>
 </html>
